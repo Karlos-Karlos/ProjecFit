@@ -12,11 +12,70 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
-    <!-- TensorFlow.js + BodyPix for Body Segmentation -->
+    <!-- TensorFlow.js + BodyPix for Body Segmentation + MobileNet for Food Recognition -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.2.0/dist/body-pix.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
 </head>
 <body>
+    <!-- SVG Gradient Definitions for All Rings -->
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <!-- Main Gauge Gradient: Red → Yellow → Blue → Green (full spectrum) -->
+            <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color: #ef4444;" />
+                <stop offset="33%" style="stop-color: #eab308;" />
+                <stop offset="66%" style="stop-color: #3b82f6;" />
+                <stop offset="100%" style="stop-color: #22c55e;" />
+            </linearGradient>
+            <!-- Gradient for low scores (red to orange) -->
+            <linearGradient id="gauge-gradient-low" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color: #ef4444;" />
+                <stop offset="100%" style="stop-color: #f97316;" />
+            </linearGradient>
+            <!-- Gradient for medium scores (orange to yellow to blue) -->
+            <linearGradient id="gauge-gradient-medium" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color: #f97316;" />
+                <stop offset="50%" style="stop-color: #eab308;" />
+                <stop offset="100%" style="stop-color: #3b82f6;" />
+            </linearGradient>
+            <!-- Gradient for high scores (blue to green) -->
+            <linearGradient id="gauge-gradient-high" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color: #3b82f6;" />
+                <stop offset="100%" style="stop-color: #22c55e;" />
+            </linearGradient>
+
+            <!-- Nutrition Macro Gradients -->
+            <!-- Protein gradient (gold to amber) -->
+            <linearGradient id="macro-protein-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color: #ef4444;" />
+                <stop offset="50%" style="stop-color: #eab308;" />
+                <stop offset="100%" style="stop-color: #22c55e;" />
+            </linearGradient>
+            <!-- Carbs gradient (orange to yellow) -->
+            <linearGradient id="macro-carbs-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color: #ef4444;" />
+                <stop offset="50%" style="stop-color: #f97316;" />
+                <stop offset="100%" style="stop-color: #eab308;" />
+            </linearGradient>
+            <!-- Fats gradient (warm to terracotta) -->
+            <linearGradient id="macro-fats-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color: #f97316;" />
+                <stop offset="50%" style="stop-color: #3b82f6;" />
+                <stop offset="100%" style="stop-color: #22c55e;" />
+            </linearGradient>
+
+            <!-- Full spectrum circular gradient -->
+            <linearGradient id="spectrum-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color: #ef4444;" />
+                <stop offset="25%" style="stop-color: #eab308;" />
+                <stop offset="50%" style="stop-color: #3b82f6;" />
+                <stop offset="75%" style="stop-color: #22c55e;" />
+                <stop offset="100%" style="stop-color: #ef4444;" />
+            </linearGradient>
+        </defs>
+    </svg>
+
     <!-- Background mesh -->
     <div class="bg-mesh">
         <div class="bg-orb bg-orb--1"></div>
@@ -55,6 +114,25 @@
 
             <div class="upload-section">
                 <div class="upload-main">
+                    <!-- Upload/Camera Mode Toggle -->
+                    <div class="input-mode-toggle">
+                        <button class="mode-btn active" id="upload-mode-btn" data-mode="upload">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            Upload
+                        </button>
+                        <button class="mode-btn" id="camera-mode-btn" data-mode="camera">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                            Camera
+                        </button>
+                    </div>
+
                     <div class="upload-zone" id="upload-zone">
                         <div class="upload-icon">
                             <div class="upload-icon-ring"></div>
@@ -72,7 +150,36 @@
                             <span class="format-tag">PNG</span>
                             <span class="format-tag">WEBP</span>
                         </div>
-                        <input type="file" class="hidden-input" id="file-input" accept="image/*">
+                        <input type="file" class="hidden-input" id="file-input" accept="image/*" capture="environment">
+                    </div>
+
+                    <!-- Camera Zone -->
+                    <div class="camera-zone" id="camera-zone" style="display: none;">
+                        <video id="camera-video" autoplay playsinline></video>
+                        <canvas id="camera-canvas" style="display: none;"></canvas>
+                        <div class="camera-controls">
+                            <button class="camera-switch-btn" id="switch-camera-btn" title="Switch Camera">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>
+                                    <path d="M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"/>
+                                    <polyline points="16 17 21 12 16 7"/>
+                                    <polyline points="8 7 3 12 8 17"/>
+                                </svg>
+                            </button>
+                            <button class="camera-capture-btn" id="capture-btn" title="Take Photo">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <circle cx="12" cy="12" r="6"/>
+                                </svg>
+                            </button>
+                            <button class="camera-close-btn" id="close-camera-btn" title="Close Camera">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="camera-hint">Position yourself in frame and tap capture</p>
                     </div>
 
                     <div class="upload-preview" id="upload-preview">
@@ -1824,19 +1931,128 @@
                     </div>
 
                     <!-- Food Recognition Card -->
-                    <div class="glass-card food-recognition">
+                    <div class="glass-card food-recognition" id="food-recognition-card">
                         <h2 style="margin-bottom: 8px;">Snap Your Meal</h2>
-                        <p class="subtitle" style="max-width: none; margin-bottom: 20px;">Upload a photo and let AI estimate calories and macros instantly.</p>
+                        <p class="subtitle" style="max-width: none; margin-bottom: 20px;">Upload or capture a photo and let AI estimate calories and macros instantly.</p>
 
-                        <div class="food-upload-zone">
-                            <div class="food-upload-icon">
+                        <!-- Food Input Mode Toggle -->
+                        <div class="input-mode-toggle" style="margin-bottom: 16px;">
+                            <button class="mode-btn active" id="food-upload-mode-btn" data-mode="upload">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                Upload
+                            </button>
+                            <button class="mode-btn" id="food-camera-mode-btn" data-mode="camera">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                                     <circle cx="12" cy="13" r="4"/>
                                 </svg>
+                                Camera
+                            </button>
+                        </div>
+
+                        <!-- Food Upload Zone -->
+                        <div class="food-upload-zone" id="food-upload-zone">
+                            <div class="food-upload-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
                             </div>
                             <p class="food-upload-text">Drop food photo here or click to browse</p>
                             <p class="food-upload-hint">AI will identify foods and estimate portions</p>
+                            <input type="file" class="hidden-input" id="food-file-input" accept="image/*">
+                        </div>
+
+                        <!-- Food Camera Zone -->
+                        <div class="camera-zone food-camera-zone" id="food-camera-zone" style="display: none;">
+                            <video id="food-camera-video" autoplay playsinline></video>
+                            <canvas id="food-camera-canvas" style="display: none;"></canvas>
+                            <div class="camera-controls">
+                                <button class="camera-switch-btn" id="food-switch-camera-btn" title="Switch Camera">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>
+                                        <path d="M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"/>
+                                        <polyline points="16 17 21 12 16 7"/>
+                                        <polyline points="8 7 3 12 8 17"/>
+                                    </svg>
+                                </button>
+                                <button class="camera-capture-btn" id="food-capture-btn" title="Take Photo">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <circle cx="12" cy="12" r="6"/>
+                                    </svg>
+                                </button>
+                                <button class="camera-close-btn" id="food-close-camera-btn" title="Close Camera">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="camera-hint">Point camera at your food and capture</p>
+                        </div>
+
+                        <!-- Food Preview -->
+                        <div class="food-preview" id="food-preview" style="display: none;">
+                            <img class="food-preview-image" id="food-preview-image" src="" alt="Food Preview">
+                            <button class="remove-preview" id="food-remove-preview">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Analyze Food Button -->
+                        <button class="btn-primary" id="analyze-food-btn" style="margin-top: 16px; display: none;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            Analyze Food
+                        </button>
+
+                        <!-- Food Analysis Results -->
+                        <div class="food-results" id="food-results" style="display: none;">
+                            <div class="food-results-header">
+                                <h3>Detected Foods</h3>
+                                <span class="food-confidence" id="food-confidence">High Confidence</span>
+                            </div>
+                            <div class="detected-foods" id="detected-foods">
+                                <!-- Detected food items will be inserted here -->
+                            </div>
+                            <div class="food-totals">
+                                <div class="food-total-item">
+                                    <span class="food-total-label">Total Calories</span>
+                                    <span class="food-total-value" id="food-total-calories">0 kcal</span>
+                                </div>
+                                <div class="food-total-macros">
+                                    <div class="food-macro-total protein">
+                                        <span id="food-total-protein">0g</span>
+                                        <span>Protein</span>
+                                    </div>
+                                    <div class="food-macro-total carbs">
+                                        <span id="food-total-carbs">0g</span>
+                                        <span>Carbs</span>
+                                    </div>
+                                    <div class="food-macro-total fats">
+                                        <span id="food-total-fats">0g</span>
+                                        <span>Fats</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn-secondary" id="add-to-log-btn" style="margin-top: 16px; width: 100%;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Add to Daily Log
+                            </button>
                         </div>
                     </div>
 
