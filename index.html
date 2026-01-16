@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHYSIQ AI - Body Visualization</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- MediaPipe for Posture Analysis -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
+    <!-- TensorFlow.js + BodyPix for Body Segmentation -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.2.0/dist/body-pix.min.js"></script>
+</head>
+<body>
+    <!-- Background mesh -->
+    <div class="bg-mesh">
+        <div class="bg-orb bg-orb--1"></div>
+        <div class="bg-orb bg-orb--2"></div>
+        <div class="bg-orb bg-orb--3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="logo-text">PHYSIQ AI</span>
+            </div>
+            <div class="nav-steps">
+                <div class="nav-step active" data-step="1"></div>
+                <div class="nav-step" data-step="2"></div>
+                <div class="nav-step" data-step="3"></div>
+                <div class="nav-step" data-step="4"></div>
+                <div class="nav-step" data-step="5"></div>
+                <div class="nav-step" data-step="6"></div>
+                <div class="nav-step" data-step="7"></div>
+            </div>
+        </header>
+
+        <!-- Screen 1: Upload -->
+        <section class="screen active" id="screen-upload">
+            <h1>Body Visualization</h1>
+            <p class="subtitle">Upload a full-body photo for AI-powered body composition analysis and fitness insights.</p>
+
+            <div class="upload-section">
+                <div class="upload-main">
+                    <div class="upload-zone" id="upload-zone">
+                        <div class="upload-icon">
+                            <div class="upload-icon-ring"></div>
+                            <div class="upload-icon-ring"></div>
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <h3 class="upload-title">Drop your photo here</h3>
+                        <p class="upload-subtitle">or click to browse files</p>
+                        <div class="upload-formats">
+                            <span class="format-tag">JPG</span>
+                            <span class="format-tag">PNG</span>
+                            <span class="format-tag">WEBP</span>
+                        </div>
+                        <input type="file" class="hidden-input" id="file-input" accept="image/*">
+                    </div>
+
+                    <div class="upload-preview" id="upload-preview">
+                        <img class="preview-image" id="preview-image" src="" alt="Preview">
+                        <div class="preview-badge">Image Ready</div>
+                        <button class="remove-preview" id="remove-preview">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="front">Front View</button>
+                        <button class="view-btn" data-view="side">Side View</button>
+                    </div>
+                </div>
+
+                <div class="upload-sidebar">
+                    <div class="glass-card quality-guide">
+                        <div class="guide-header">
+                            <div class="guide-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="16" x2="12" y2="12"/>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                                </svg>
+                            </div>
+                            <h3>Quality Guidelines</h3>
+                        </div>
+                        <div class="guide-items">
+                            <div class="guide-item">
+                                <div class="guide-item-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </div>
+                                <div class="guide-item-text">
+                                    <h4>Full Body Visible</h4>
+                                    <p>Stand 6-8 feet from camera, head to toe visible</p>
+                                </div>
+                            </div>
+                            <div class="guide-item">
+                                <div class="guide-item-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="5"/>
+                                        <line x1="12" y1="1" x2="12" y2="3"/>
+                                        <line x1="12" y1="21" x2="12" y2="23"/>
+                                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                        <line x1="1" y1="12" x2="3" y2="12"/>
+                                        <line x1="21" y1="12" x2="23" y2="12"/>
+                                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                                    </svg>
+                                </div>
+                                <div class="guide-item-text">
+                                    <h4>Good Lighting</h4>
+                                    <p>Even, front-facing light without harsh shadows</p>
+                                </div>
+                            </div>
+                            <div class="guide-item">
+                                <div class="guide-item-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                                        <polyline points="21 15 16 10 5 21"/>
+                                    </svg>
+                                </div>
+                                <div class="guide-item-text">
+                                    <h4>Neutral Background</h4>
+                                    <p>Plain wall or uncluttered space works best</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card optional-inputs">
+                        <h3>Body Measurements <span class="required-badge">Required</span></h3>
+                        <p class="input-hint">For accurate body composition analysis</p>
+
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label class="input-label">Height</label>
+                                <div class="input-with-unit">
+                                    <input type="number" class="input-number" id="height-input" placeholder="170" min="100" max="250">
+                                    <span class="input-unit">cm</span>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Weight</label>
+                                <div class="input-with-unit">
+                                    <input type="number" class="input-number" id="weight-input" placeholder="70" min="30" max="300">
+                                    <span class="input-unit">kg</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bmi-preview" id="bmi-preview" style="display: none;">
+                            <div class="bmi-value" id="bmi-value">--</div>
+                            <div class="bmi-category" id="bmi-category">Enter height & weight</div>
+                        </div>
+
+                        <div class="input-group">
+                            <label class="input-label">Age Range <span class="optional-badge">Optional</span></label>
+                            <select class="input-select" id="age-range">
+                                <option value="">Select range</option>
+                                <option value="18-24">18-24 years</option>
+                                <option value="25-34">25-34 years</option>
+                                <option value="35-44">35-44 years</option>
+                                <option value="45-54">45-54 years</option>
+                                <option value="55+">55+ years</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Activity Level <span class="optional-badge">Optional</span></label>
+                            <select class="input-select" id="activity-level">
+                                <option value="">Select level</option>
+                                <option value="sedentary">Sedentary</option>
+                                <option value="light">Lightly Active</option>
+                                <option value="moderate">Moderately Active</option>
+                                <option value="very">Very Active</option>
+                                <option value="athlete">Athlete</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="disclaimer">
+                        <div class="disclaimer-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                        <p><strong>Educational Use Only.</strong> Results are approximate estimations for motivational purposes. Not intended as medical advice or clinical measurement.</p>
+                    </div>
+
+                    <button class="btn-primary" id="analyze-btn" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                        Analyze Photo
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 2: Analysis -->
+        <section class="screen" id="screen-analysis">
+            <div class="analysis-content">
+                <div class="analysis-orb">
+                    <div class="orb-core"></div>
+                    <div class="orb-ring"></div>
+                    <div class="orb-ring"></div>
+                    <div class="orb-ring"></div>
+                    <div class="particles">
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                        <div class="particle"></div>
+                    </div>
+                </div>
+
+                <h2 class="analysis-title">Analyzing Your Photo</h2>
+                <p class="analysis-subtitle">Our AI is processing your image. This usually takes a few seconds.</p>
+
+                <div class="progress-steps">
+                    <div class="progress-step active" id="step-pose">
+                        <div class="step-indicator">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <span class="step-label">Detecting Pose</span>
+                        <div class="step-connector"><div class="step-connector-fill"></div></div>
+                    </div>
+                    <div class="progress-step" id="step-extract">
+                        <div class="step-indicator">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M3 9h18"/>
+                                <path d="M9 21V9"/>
+                            </svg>
+                        </div>
+                        <span class="step-label">Extracting Features</span>
+                        <div class="step-connector"><div class="step-connector-fill"></div></div>
+                    </div>
+                    <div class="progress-step" id="step-analyze">
+                        <div class="step-indicator">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
+                                <polyline points="7.5 19.79 7.5 14.6 3 12"/>
+                                <polyline points="21 12 16.5 14.6 16.5 19.79"/>
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                                <line x1="12" y1="22.08" x2="12" y2="12"/>
+                            </svg>
+                        </div>
+                        <span class="step-label">Analyzing Body</span>
+                        <div class="step-connector"><div class="step-connector-fill"></div></div>
+                    </div>
+                    <div class="progress-step" id="step-generate">
+                        <div class="step-indicator">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                        </div>
+                        <span class="step-label">Generating Results</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 3: Results Dashboard -->
+        <section class="screen" id="screen-results">
+            <h1>Analysis Results</h1>
+            <p class="subtitle">Your AI-powered body composition analysis is ready. Explore your personalized insights below.</p>
+
+            <div class="results-grid">
+                <div class="glass-card body-viz-card">
+                    <div class="confidence-badge">
+                        <div class="confidence-dot"></div>
+                        <span class="confidence-text">High Confidence</span>
+                    </div>
+                    <p class="confidence-description">Analysis based on AI skeleton detection and user input.</p>
+                    <div class="body-silhouette">
+                        <svg class="silhouette-svg" viewBox="0 0 100 200">
+                            <path class="silhouette-body" d="M50 10 C60 10 65 20 65 30 C65 40 60 45 55 48 L60 50 C75 55 80 70 80 85 L80 100 C80 105 78 110 75 112 L75 150 C75 155 73 160 70 162 L70 185 C70 190 65 195 60 195 L55 195 C52 195 50 193 50 190 L50 190 C50 193 48 195 45 195 L40 195 C35 195 30 190 30 185 L30 162 C27 160 25 155 25 150 L25 112 C22 110 20 105 20 100 L20 85 C20 70 25 55 40 50 L45 48 C40 45 35 40 35 30 C35 20 40 10 50 10 Z"/>
+                        </svg>
+
+                        <div class="body-zone zone-shoulders">
+                            <div class="zone-dot"></div>
+                            <div class="zone-label">Shoulders: Balanced</div>
+                        </div>
+                        <div class="body-zone zone-chest">
+                            <div class="zone-dot"></div>
+                            <div class="zone-label">Upper Body: Athletic</div>
+                        </div>
+                        <div class="body-zone zone-core">
+                            <div class="zone-dot"></div>
+                            <div class="zone-label">Core: Moderate Tone</div>
+                        </div>
+                        <div class="body-zone zone-legs">
+                            <div class="zone-dot"></div>
+                            <div class="zone-label">Lower Body: Strong</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metrics-container">
+                    <div class="glass-card metric-card">
+                        <div class="metric-header">
+                            <div>
+                                <h3 class="metric-title">Body Composition</h3>
+                                <p class="metric-subtitle">Visual estimation category</p>
+                            </div>
+                            <span class="metric-value">Athletic</span>
+                        </div>
+                        <div class="gauge-container">
+                            <div class="gauge">
+                                <svg class="gauge-svg" viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+                                    <circle class="gauge-fill" cx="50" cy="50" r="40" data-value="72"/>
+                                </svg>
+                                <div class="gauge-value">72</div>
+                            </div>
+                            <div class="gauge-info">
+                                <div class="gauge-stat">
+                                    <span class="stat-label">Lean Mass Index</span>
+                                    <span class="stat-value">Above Average</span>
+                                </div>
+                                <div class="gauge-stat">
+                                    <span class="stat-label">Proportion Balance</span>
+                                    <span class="stat-value">Symmetrical</span>
+                                </div>
+                                <div class="gauge-stat">
+                                    <span class="stat-label">Body Type</span>
+                                    <span class="stat-value">Mesomorph</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card metric-card">
+                        <div class="metric-header">
+                            <div>
+                                <h3 class="metric-title">Muscle Tone Distribution</h3>
+                                <p class="metric-subtitle">Approximate regional analysis</p>
+                            </div>
+                            <span class="metric-value">68%</span>
+                        </div>
+                        <div class="gauge-container">
+                            <div class="gauge">
+                                <svg class="gauge-svg" viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+                                    <circle class="gauge-fill amber" cx="50" cy="50" r="40" data-value="68"/>
+                                </svg>
+                                <div class="gauge-value">68</div>
+                            </div>
+                            <div class="gauge-info">
+                                <div class="gauge-stat">
+                                    <span class="stat-label">Upper Body</span>
+                                    <span class="stat-value">Well Developed</span>
+                                </div>
+                                <div class="gauge-stat">
+                                    <span class="stat-label">Core</span>
+                                    <span class="stat-value">Moderate</span>
+                                </div>
+                                <div class="gauge-stat">
+                                    <span class="stat-label">Lower Body</span>
+                                    <span class="stat-value">Strong</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div class="metric-header">
+                        <div>
+                            <h3 class="metric-title">Posture Alignment</h3>
+                            <p class="metric-subtitle">Spine and shoulder analysis</p>
+                        </div>
+                        <span class="metric-value">Good</span>
+                    </div>
+                    <div class="gauge-container">
+                        <div class="gauge">
+                            <svg class="gauge-svg" viewBox="0 0 100 100">
+                                <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+                                <circle class="gauge-fill purple" cx="50" cy="50" r="40" data-value="78"/>
+                            </svg>
+                            <div class="gauge-value">78</div>
+                        </div>
+                        <div class="gauge-info">
+                            <div class="gauge-stat">
+                                <span class="stat-label">Shoulder Level</span>
+                                <span class="stat-value">Aligned</span>
+                            </div>
+                            <div class="gauge-stat">
+                                <span class="stat-label">Spine Curvature</span>
+                                <span class="stat-value">Minor Forward</span>
+                            </div>
+                            <div class="gauge-stat">
+                                <span class="stat-label">Hip Alignment</span>
+                                <span class="stat-value">Balanced</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <h3 class="metric-title" style="margin-bottom: 20px;">Fitness Overview</h3>
+                    <div class="results-overview">
+                        <div class="overview-item">
+                            <div class="overview-value">7.2</div>
+                            <div class="overview-label">Fitness Index</div>
+                        </div>
+                        <div class="overview-item">
+                            <div class="overview-value">28</div>
+                            <div class="overview-label">Visual Age</div>
+                        </div>
+                        <div class="overview-item">
+                            <div class="overview-value">B+</div>
+                            <div class="overview-label">Overall Grade</div>
+                        </div>
+                        <div class="overview-item">
+                            <div class="overview-value">82%</div>
+                            <div class="overview-label">Symmetry</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-actions">
+                    <button class="btn-secondary" id="view-details-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            <line x1="11" y1="8" x2="11" y2="14"/>
+                            <line x1="8" y1="11" x2="14" y2="11"/>
+                        </svg>
+                        Detailed Breakdown
+                    </button>
+                    <button class="btn-secondary" id="open-simulator-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        Simulator
+                    </button>
+                    <button class="btn-secondary" id="open-workout-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6.5 6.5h11"/>
+                            <path d="M6.5 17.5h11"/>
+                            <path d="M4 10v4"/>
+                            <path d="M20 10v4"/>
+                        </svg>
+                        Workouts
+                    </button>
+                    <button class="btn-secondary" id="open-nutrition-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                        Nutrition
+                    </button>
+                    <button class="btn-primary" style="flex: 1;" id="new-analysis-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                        New Analysis
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 4: Detailed Breakdown -->
+        <section class="screen" id="screen-breakdown">
+            <button class="back-button" id="back-to-results">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"/>
+                    <polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Back to Results
+            </button>
+
+            <div class="breakdown-header">
+                <div>
+                    <h1>Detailed Breakdown</h1>
+                    <p class="subtitle">In-depth analysis of your body composition and posture.</p>
+                </div>
+                <div class="explainability-toggle" id="explainability-toggle">
+                    <div class="toggle-switch">
+                        <div class="toggle-knob"></div>
+                    </div>
+                    <span class="toggle-label">Why AI Thinks This</span>
+                </div>
+            </div>
+
+            <div class="breakdown-content">
+                <div class="breakdown-sections">
+                    <!-- Body Composition Section -->
+                    <div class="breakdown-section expanded">
+                        <div class="section-header">
+                            <div class="section-title-group">
+                                <div class="section-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="section-title">Body Composition</h3>
+                                    <p class="section-subtitle">Visual body type and proportions</p>
+                                </div>
+                            </div>
+                            <div class="section-score">
+                                <span class="score-value">72/100</span>
+                                <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="section-body">
+                                <div class="explainability-box">
+                                    <div class="explainability-header">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                        </svg>
+                                        <span>AI Reasoning</span>
+                                    </div>
+                                    <p class="explainability-text" id="explain-body-comp">Classification based on detected body proportions and shape analysis using MediaPipe pose detection.</p>
+                                </div>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <div class="detail-label">Body Type</div>
+                                        <div class="detail-value good">Mesomorph</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Shoulder-Waist Ratio</div>
+                                        <div class="detail-value good">1.42 (Athletic)</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Visual Lean Mass</div>
+                                        <div class="detail-value good">Above Average</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Proportion Score</div>
+                                        <div class="detail-value">72/100</div>
+                                    </div>
+                                </div>
+                                <div class="recommendations">
+                                    <h4>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                        </svg>
+                                        Recommendations
+                                    </h4>
+                                    <div class="recommendation-list">
+                                        <div class="recommendation-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            <span>Maintain current training routine to preserve muscle mass</span>
+                                        </div>
+                                        <div class="recommendation-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            <span>Focus on core exercises to improve midsection definition</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Muscle Tone Section -->
+                    <div class="breakdown-section">
+                        <div class="section-header">
+                            <div class="section-title-group">
+                                <div class="section-icon amber">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                                        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                                        <line x1="6" y1="1" x2="6" y2="4"/>
+                                        <line x1="10" y1="1" x2="10" y2="4"/>
+                                        <line x1="14" y1="1" x2="14" y2="4"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="section-title">Muscle Tone Distribution</h3>
+                                    <p class="section-subtitle">Regional muscle analysis</p>
+                                </div>
+                            </div>
+                            <div class="section-score">
+                                <span class="score-value" style="color: var(--accent-amber);">68/100</span>
+                                <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="section-body">
+                                <div class="explainability-box">
+                                    <div class="explainability-header">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                        </svg>
+                                        <span>AI Reasoning</span>
+                                    </div>
+                                    <p class="explainability-text" id="explain-muscle-tone">Muscle assessment based on detected landmark positions and body proportions analysis.</p>
+                                </div>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <div class="detail-label">Upper Body</div>
+                                        <div class="detail-value good">Well Developed</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Core / Midsection</div>
+                                        <div class="detail-value warning">Moderate</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Lower Body</div>
+                                        <div class="detail-value good">Strong</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Balance Score</div>
+                                        <div class="detail-value">68/100</div>
+                                    </div>
+                                </div>
+                                <div class="recommendations">
+                                    <h4>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                        </svg>
+                                        Recommendations
+                                    </h4>
+                                    <div class="recommendation-list">
+                                        <div class="recommendation-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            <span>Add dedicated core training 2-3x per week</span>
+                                        </div>
+                                        <div class="recommendation-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            <span>Include compound movements like deadlifts for overall balance</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Posture Section -->
+                    <div class="breakdown-section">
+                        <div class="section-header">
+                            <div class="section-title-group">
+                                <div class="section-icon purple">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 22V8"/>
+                                        <path d="M5 12H2a10 10 0 0 0 20 0h-3"/>
+                                        <circle cx="12" cy="5" r="3"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="section-title">Posture Analysis</h3>
+                                    <p class="section-subtitle">Alignment and deviation assessment</p>
+                                </div>
+                            </div>
+                            <div class="section-score">
+                                <span class="score-value" style="color: var(--accent-purple);">78/100</span>
+                                <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            <div class="section-body">
+                                <div class="explainability-box">
+                                    <div class="explainability-header">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                        </svg>
+                                        <span>AI Reasoning</span>
+                                    </div>
+                                    <p class="explainability-text" id="explain-posture">Posture assessment based on shoulder alignment, head position, and hip balance detection.</p>
+                                </div>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <div class="detail-label">Shoulder Level</div>
+                                        <div class="detail-value good">Aligned (±2°)</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Head Position</div>
+                                        <div class="detail-value warning">Slight Forward</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Hip Alignment</div>
+                                        <div class="detail-value good">Balanced</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Posture Score</div>
+                                        <div class="detail-value">78/100</div>
+                                    </div>
+                                </div>
+                                <div class="posture-viz">
+                                    <div class="posture-diagram">
+                                        <div class="posture-line"></div>
+                                        <div class="posture-point"></div>
+                                        <div class="posture-point"></div>
+                                        <div class="posture-point"></div>
+                                        <div class="posture-point"></div>
+                                        <div class="posture-point"></div>
+                                        <div class="posture-deviation"></div>
+                                    </div>
+                                    <div class="posture-notes">
+                                        <div class="posture-note">
+                                            <div class="note-indicator good"></div>
+                                            <p class="note-text">Shoulders are well-aligned with minimal lateral tilt</p>
+                                        </div>
+                                        <div class="posture-note">
+                                            <div class="note-indicator warning"></div>
+                                            <p class="note-text">Minor forward head posture detected (common in desk workers)</p>
+                                        </div>
+                                        <div class="posture-note">
+                                            <div class="note-indicator good"></div>
+                                            <p class="note-text">Hip and lower body alignment appears balanced</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="recommendations">
+                                    <h4>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                        </svg>
+                                        Recommendations
+                                    </h4>
+                                    <div class="recommendation-list">
+                                        <div class="recommendation-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            <span>Practice chin tucks daily to correct forward head position</span>
+                                        </div>
+                                        <div class="recommendation-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            <span>Strengthen upper back with rows and face pulls</span>
+                                        </div>
+                                        <div class="recommendation-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            <span>Take regular breaks if working at a desk for extended periods</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 5: Lifestyle Simulator -->
+        <section class="screen" id="screen-simulator">
+            <button class="back-button" id="back-to-results-sim">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"/>
+                    <polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Back to Results
+            </button>
+
+            <h1>Lifestyle Simulator</h1>
+            <p class="subtitle">Explore how different lifestyle choices may visually affect your body over time.</p>
+
+            <div class="simulator-content">
+                <div class="simulator-grid">
+                    <!-- Avatar Comparison -->
+                    <div class="glass-card avatar-comparison">
+                        <div class="comparison-header">
+                            <div>
+                                <h2>Visual Projection</h2>
+                                <p class="subtitle" style="font-size: 0.9rem;">Side-by-side comparison based on selected scenario</p>
+                            </div>
+                        </div>
+                        <div class="avatar-container">
+                            <div class="avatar-frame current">
+                                <div class="avatar-label">Current State<span>Based on analysis</span></div>
+                                <div class="avatar-body" id="avatar-current">
+                                    <svg viewBox="0 0 100 200">
+                                        <path class="body-fill" d="M50 10 C60 10 65 20 65 30 C65 40 60 45 55 48 L60 50 C75 55 80 70 80 85 L80 100 C80 105 78 110 75 112 L75 150 C75 155 73 160 70 162 L70 185 C70 190 65 195 60 195 L55 195 C52 195 50 193 50 190 L50 190 C50 193 48 195 45 195 L40 195 C35 195 30 190 30 185 L30 162 C27 160 25 155 25 150 L25 112 C22 110 20 105 20 100 L20 85 C20 70 25 55 40 50 L45 48 C40 45 35 40 35 30 C35 20 40 10 50 10 Z"/>
+                                    </svg>
+                                </div>
+                                <div class="avatar-stats">
+                                    <div class="avatar-stat">
+                                        <span class="avatar-stat-label">Fitness Index</span>
+                                        <span class="avatar-stat-value">7.2</span>
+                                    </div>
+                                    <div class="avatar-stat">
+                                        <span class="avatar-stat-label">Muscle Tone</span>
+                                        <span class="avatar-stat-value">68%</span>
+                                    </div>
+                                    <div class="avatar-stat">
+                                        <span class="avatar-stat-label">Visual Age</span>
+                                        <span class="avatar-stat-value">28</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="comparison-arrow">
+                                <div class="arrow-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                        <polyline points="12 5 19 12 12 19"/>
+                                    </svg>
+                                </div>
+                                <span class="arrow-label" id="timeline-label">6 Months</span>
+                            </div>
+
+                            <div class="avatar-frame future">
+                                <div class="avatar-label">Projected State<span id="scenario-time">After 6 months</span></div>
+                                <div class="avatar-body" id="avatar-future">
+                                    <svg viewBox="0 0 100 200">
+                                        <path class="body-fill" id="future-body-path" d="M50 10 C58 10 62 20 62 30 C62 40 58 45 54 48 L58 50 C72 54 76 68 76 82 L76 96 C76 100 74 104 72 106 L72 148 C72 152 70 156 68 158 L68 185 C68 190 64 195 60 195 L55 195 C52 195 50 193 50 190 L50 190 C50 193 48 195 45 195 L40 195 C36 195 32 190 32 185 L32 158 C30 156 28 152 28 148 L28 106 C26 104 24 100 24 96 L24 82 C24 68 28 54 42 50 L46 48 C42 45 38 40 38 30 C38 20 42 10 50 10 Z"/>
+                                    </svg>
+                                </div>
+                                <div class="avatar-stats">
+                                    <div class="avatar-stat">
+                                        <span class="avatar-stat-label">Fitness Index</span>
+                                        <span class="avatar-stat-value future" id="future-fitness">8.1</span>
+                                    </div>
+                                    <div class="avatar-stat">
+                                        <span class="avatar-stat-label">Muscle Tone</span>
+                                        <span class="avatar-stat-value future" id="future-muscle">78%</span>
+                                    </div>
+                                    <div class="avatar-stat">
+                                        <span class="avatar-stat-label">Visual Age</span>
+                                        <span class="avatar-stat-value future" id="future-age">25</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="visual-age-display">
+                            <div class="age-indicator">
+                                <div class="age-number current">28</div>
+                                <div class="age-label">Current Visual Age</div>
+                            </div>
+                            <div class="age-arrow"></div>
+                            <div class="age-indicator">
+                                <div class="age-number projected" id="projected-visual-age">25</div>
+                                <div class="age-label">Projected Visual Age</div>
+                            </div>
+                            <div class="age-benefit">
+                                With consistent effort, you could appear <strong id="years-younger">3 years younger</strong> based on posture, muscle tone, and overall fitness indicators.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Slider -->
+                    <div class="glass-card timeline-card">
+                        <div class="timeline-header">
+                            <div>
+                                <h3>Projection Timeline</h3>
+                                <p class="metric-subtitle">Adjust to see estimated changes over time</p>
+                            </div>
+                            <span class="timeline-value" id="timeline-display">6 Months</span>
+                        </div>
+                        <div class="timeline-slider-container">
+                            <input type="range" class="timeline-slider" id="timeline-slider" min="1" max="5" value="2" step="1">
+                            <div class="timeline-markers">
+                                <span class="timeline-marker" data-value="1">1 Month</span>
+                                <span class="timeline-marker active" data-value="2">6 Months</span>
+                                <span class="timeline-marker" data-value="3">1 Year</span>
+                                <span class="timeline-marker" data-value="4">2 Years</span>
+                                <span class="timeline-marker" data-value="5">5 Years</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scenario: Active Lifestyle -->
+                    <div class="glass-card scenario-card active" data-scenario="active">
+                        <div class="scenario-header">
+                            <div class="scenario-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                                    <line x1="6" y1="1" x2="6" y2="4"/>
+                                    <line x1="10" y1="1" x2="10" y2="4"/>
+                                    <line x1="14" y1="1" x2="14" y2="4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="scenario-title">Active Lifestyle</h3>
+                                <p class="scenario-subtitle">3-4x weekly exercise + balanced nutrition</p>
+                            </div>
+                        </div>
+                        <div class="scenario-details">
+                            <div class="scenario-detail">
+                                <span class="detail-name">Muscle Tone</span>
+                                <span class="detail-change positive">+10-15%</span>
+                            </div>
+                            <div class="scenario-detail">
+                                <span class="detail-name">Posture Score</span>
+                                <span class="detail-change positive">+8-12 pts</span>
+                            </div>
+                            <div class="scenario-detail">
+                                <span class="detail-name">Visual Age</span>
+                                <span class="detail-change positive">-2 to -4 years</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scenario: Sedentary -->
+                    <div class="glass-card scenario-card" data-scenario="sedentary">
+                        <div class="scenario-header">
+                            <div class="scenario-icon coral">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="6" width="20" height="12" rx="2"/>
+                                    <path d="M12 12h.01"/>
+                                    <path d="M17 12h.01"/>
+                                    <path d="M7 12h.01"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="scenario-title">Sedentary Continuation</h3>
+                                <p class="scenario-subtitle">Minimal activity + unchanged habits</p>
+                            </div>
+                        </div>
+                        <div class="scenario-details">
+                            <div class="scenario-detail">
+                                <span class="detail-name">Muscle Tone</span>
+                                <span class="detail-change negative">-5-10%</span>
+                            </div>
+                            <div class="scenario-detail">
+                                <span class="detail-name">Posture Score</span>
+                                <span class="detail-change negative">-5-8 pts</span>
+                            </div>
+                            <div class="scenario-detail">
+                                <span class="detail-name">Visual Age</span>
+                                <span class="detail-change negative">+2 to +4 years</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scenario: Intensive Training -->
+                    <div class="glass-card scenario-card" data-scenario="intensive">
+                        <div class="scenario-header">
+                            <div class="scenario-icon purple">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="scenario-title">Intensive Training</h3>
+                                <p class="scenario-subtitle">5-6x weekly + optimized nutrition</p>
+                            </div>
+                        </div>
+                        <div class="scenario-details">
+                            <div class="scenario-detail">
+                                <span class="detail-name">Muscle Tone</span>
+                                <span class="detail-change positive">+20-30%</span>
+                            </div>
+                            <div class="scenario-detail">
+                                <span class="detail-name">Posture Score</span>
+                                <span class="detail-change positive">+12-18 pts</span>
+                            </div>
+                            <div class="scenario-detail">
+                                <span class="detail-name">Visual Age</span>
+                                <span class="detail-change positive">-4 to -6 years</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scenario: Nutrition Focus -->
+                    <div class="glass-card scenario-card" data-scenario="nutrition">
+                        <div class="scenario-header">
+                            <div class="scenario-icon amber">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                    <path d="M12 2v2"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="scenario-title">Nutrition Optimization</h3>
+                                <p class="scenario-subtitle">Protein-focused + caloric balance</p>
+                            </div>
+                        </div>
+                        <div class="scenario-details">
+                            <div class="scenario-detail">
+                                <span class="detail-name">Body Composition</span>
+                                <span class="detail-change positive">+8-12%</span>
+                            </div>
+                            <div class="scenario-detail">
+                                <span class="detail-name">Muscle Definition</span>
+                                <span class="detail-change positive">+5-10%</span>
+                            </div>
+                            <div class="scenario-detail">
+                                <span class="detail-name">Visual Age</span>
+                                <span class="detail-change positive">-1 to -2 years</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Impact Summary -->
+                    <div class="glass-card impact-summary">
+                        <h3 class="metric-title">Projected Impact Summary</h3>
+                        <p class="metric-subtitle">Estimated changes based on selected scenario and timeline</p>
+                        <div class="impact-grid">
+                            <div class="impact-item">
+                                <div class="impact-value" id="impact-fitness">+0.9</div>
+                                <div class="impact-label">Fitness Index</div>
+                                <span class="impact-change positive" id="impact-fitness-pct">+12.5%</span>
+                            </div>
+                            <div class="impact-item">
+                                <div class="impact-value" id="impact-muscle">+10%</div>
+                                <div class="impact-label">Muscle Tone</div>
+                                <span class="impact-change positive" id="impact-muscle-pct">Improved</span>
+                            </div>
+                            <div class="impact-item">
+                                <div class="impact-value" id="impact-posture">+10</div>
+                                <div class="impact-label">Posture Score</div>
+                                <span class="impact-change positive" id="impact-posture-pct">+13%</span>
+                            </div>
+                            <div class="impact-item">
+                                <div class="impact-value" id="impact-age">-3</div>
+                                <div class="impact-label">Visual Age</div>
+                                <span class="impact-change positive" id="impact-age-pct">Years Younger</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="simulator-actions">
+                        <button class="btn-secondary" id="back-to-breakdown">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"/>
+                            </svg>
+                            View Detailed Analysis
+                        </button>
+                        <button class="btn-primary" style="flex: 1;" id="start-new-sim">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                            </svg>
+                            New Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 6: Workout Guidance -->
+        <section class="screen" id="screen-workout">
+            <button class="back-button" id="back-to-results-workout">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"/>
+                    <polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Back to Results
+            </button>
+
+            <h1>Workout Guidance</h1>
+            <p class="subtitle">Personalized exercise recommendations based on your body analysis and fitness goals.</p>
+
+            <div class="workout-content">
+                <!-- Filters -->
+                <div class="workout-header">
+                    <div class="workout-filters">
+                        <button class="filter-btn active" data-filter="all">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7"/>
+                                <rect x="14" y="3" width="7" height="7"/>
+                                <rect x="14" y="14" width="7" height="7"/>
+                                <rect x="3" y="14" width="7" height="7"/>
+                            </svg>
+                            All
+                        </button>
+                        <button class="filter-btn" data-filter="home">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                <polyline points="9 22 9 12 15 12 15 22"/>
+                            </svg>
+                            Home
+                        </button>
+                        <button class="filter-btn" data-filter="gym">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6.5 6.5h11"/>
+                                <path d="M6.5 17.5h11"/>
+                                <path d="M4 10v4"/>
+                                <path d="M20 10v4"/>
+                                <path d="M6.5 6.5v11"/>
+                                <path d="M17.5 6.5v11"/>
+                                <path d="M2 12h2"/>
+                                <path d="M20 12h2"/>
+                            </svg>
+                            Gym
+                        </button>
+                        <button class="filter-btn" data-filter="weak">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v4"/>
+                                <path d="M12 18v4"/>
+                                <path d="M4.93 4.93l2.83 2.83"/>
+                                <path d="M16.24 16.24l2.83 2.83"/>
+                                <path d="M2 12h4"/>
+                                <path d="M18 12h4"/>
+                                <path d="M4.93 19.07l2.83-2.83"/>
+                                <path d="M16.24 7.76l2.83-2.83"/>
+                            </svg>
+                            Weak Areas
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Weak Areas Banner -->
+                <div class="weak-areas-banner">
+                    <div class="weak-areas-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2v4"/>
+                            <path d="M12 18v4"/>
+                            <path d="M4.93 4.93l2.83 2.83"/>
+                            <path d="M16.24 16.24l2.83 2.83"/>
+                            <path d="M2 12h4"/>
+                            <path d="M18 12h4"/>
+                        </svg>
+                    </div>
+                    <div class="weak-areas-text">
+                        <h3>Focus Areas Detected</h3>
+                        <p>Based on your analysis, we recommend prioritizing these areas for improvement.</p>
+                    </div>
+                    <div class="weak-areas-tags">
+                        <span class="weak-tag">Core Stability</span>
+                        <span class="weak-tag">Posture</span>
+                    </div>
+                </div>
+
+                <!-- Exercise Grid -->
+                <div class="workout-grid">
+                    <!-- Exercise 1: Squats -->
+                    <div class="glass-card exercise-card" data-type="home" data-weak="false">
+                        <div class="exercise-header">
+                            <div class="exercise-info">
+                                <h3>Bodyweight Squats</h3>
+                                <div class="exercise-meta">
+                                    <span class="exercise-tag home">Home</span>
+                                    <span class="exercise-tag beginner">Beginner</span>
+                                </div>
+                            </div>
+                            <div class="exercise-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                8 min
+                            </div>
+                        </div>
+                        <div class="exercise-avatar">
+                            <div class="avatar-figure squat">
+                                <svg viewBox="0 0 60 100">
+                                    <circle class="figure-body" cx="30" cy="12" r="8"/>
+                                    <line class="figure-body" x1="30" y1="20" x2="30" y2="45"/>
+                                    <line class="figure-body" x1="30" y1="28" x2="15" y2="40"/>
+                                    <line class="figure-body" x1="30" y1="28" x2="45" y2="40"/>
+                                    <line class="figure-body" x1="30" y1="45" x2="20" y2="70"/>
+                                    <line class="figure-body" x1="30" y1="45" x2="40" y2="70"/>
+                                    <line class="figure-body" x1="20" y1="70" x2="18" y2="90"/>
+                                    <line class="figure-body" x1="40" y1="70" x2="42" y2="90"/>
+                                </svg>
+                            </div>
+                            <div class="muscle-targets">
+                                <span class="muscle-tag">Quads</span>
+                                <span class="muscle-tag">Glutes</span>
+                                <span class="muscle-tag">Core</span>
+                            </div>
+                        </div>
+                        <div class="exercise-details">
+                            <div class="detail-box">
+                                <div class="detail-box-value">3</div>
+                                <div class="detail-box-label">Sets</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-box-value">15</div>
+                                <div class="detail-box-label">Reps</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-box-value">60s</div>
+                                <div class="detail-box-label">Rest</div>
+                            </div>
+                        </div>
+                        <p class="exercise-description">Stand with feet shoulder-width apart. Lower your body by bending knees and pushing hips back. Keep chest up and core engaged.</p>
+                        <div class="exercise-actions">
+                            <button class="btn-exercise secondary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Save
+                            </button>
+                            <button class="btn-exercise primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke="currentColor">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                Start
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Exercise 2: Plank -->
+                    <div class="glass-card exercise-card" data-type="home" data-weak="true">
+                        <div class="exercise-header">
+                            <div class="exercise-info">
+                                <h3>Plank Hold</h3>
+                                <div class="exercise-meta">
+                                    <span class="exercise-tag home">Home</span>
+                                    <span class="exercise-tag intermediate">Intermediate</span>
+                                    <span class="exercise-tag weak-focus">Core Focus</span>
+                                </div>
+                            </div>
+                            <div class="exercise-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                5 min
+                            </div>
+                        </div>
+                        <div class="exercise-avatar">
+                            <div class="avatar-figure plank">
+                                <svg viewBox="0 0 100 60">
+                                    <circle class="figure-body" cx="85" cy="25" r="6"/>
+                                    <line class="figure-body" x1="79" y1="25" x2="40" y2="30"/>
+                                    <line class="figure-body" x1="40" y1="30" x2="15" y2="30"/>
+                                    <line class="figure-body" x1="65" y1="28" x2="70" y2="45"/>
+                                    <line class="figure-body" x1="55" y1="29" x2="50" y2="45"/>
+                                    <line class="figure-body" x1="25" y1="30" x2="20" y2="50"/>
+                                    <line class="figure-body" x1="15" y1="30" x2="10" y2="50"/>
+                                </svg>
+                            </div>
+                            <div class="muscle-targets">
+                                <span class="muscle-tag">Core</span>
+                                <span class="muscle-tag">Shoulders</span>
+                                <span class="muscle-tag">Back</span>
+                            </div>
+                        </div>
+                        <div class="exercise-details">
+                            <div class="detail-box">
+                                <div class="detail-box-value">3</div>
+                                <div class="detail-box-label">Sets</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-box-value">45s</div>
+                                <div class="detail-box-label">Hold</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-box-value">30s</div>
+                                <div class="detail-box-label">Rest</div>
+                            </div>
+                        </div>
+                        <p class="exercise-description">Hold a push-up position with forearms on ground. Keep body in straight line from head to heels. Engage core throughout.</p>
+                        <div class="exercise-actions">
+                            <button class="btn-exercise secondary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Save
+                            </button>
+                            <button class="btn-exercise primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke="currentColor">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                Start
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Exercise 3: Dumbbell Rows -->
+                    <div class="glass-card exercise-card" data-type="gym" data-weak="true">
+                        <div class="exercise-header">
+                            <div class="exercise-info">
+                                <h3>Dumbbell Rows</h3>
+                                <div class="exercise-meta">
+                                    <span class="exercise-tag gym">Gym</span>
+                                    <span class="exercise-tag intermediate">Intermediate</span>
+                                    <span class="exercise-tag weak-focus">Posture</span>
+                                </div>
+                            </div>
+                            <div class="exercise-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                10 min
+                            </div>
+                        </div>
+                        <div class="exercise-avatar">
+                            <div class="avatar-figure curl">
+                                <svg viewBox="0 0 60 100">
+                                    <circle class="figure-body" cx="30" cy="15" r="8"/>
+                                    <line class="figure-body" x1="30" y1="23" x2="35" y2="50"/>
+                                    <line class="figure-body" x1="30" y1="30" x2="15" y2="45"/>
+                                    <line class="figure-body" x1="30" y1="30" x2="45" y2="35"/>
+                                    <line class="figure-body" x1="45" y1="35" x2="40" y2="50"/>
+                                    <line class="figure-body" x1="35" y1="50" x2="25" y2="75"/>
+                                    <line class="figure-body" x1="35" y1="50" x2="45" y2="75"/>
+                                    <rect class="figure-body" x="37" y="48" width="8" height="4" rx="1"/>
+                                </svg>
+                            </div>
+                            <div class="muscle-targets">
+                                <span class="muscle-tag">Back</span>
+                                <span class="muscle-tag">Biceps</span>
+                                <span class="muscle-tag">Rear Delts</span>
+                            </div>
+                        </div>
+                        <div class="exercise-details">
+                            <div class="detail-box">
+                                <div class="detail-box-value">4</div>
+                                <div class="detail-box-label">Sets</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-box-value">12</div>
+                                <div class="detail-box-label">Reps</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-box-value">90s</div>
+                                <div class="detail-box-label">Rest</div>
+                            </div>
+                        </div>
+                        <p class="exercise-description">Hinge at hips, one hand on bench. Pull dumbbell to hip, squeezing shoulder blade. Great for improving posture.</p>
+                        <div class="exercise-actions">
+                            <button class="btn-exercise secondary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Save
+                            </button>
+                            <button class="btn-exercise primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke="currentColor">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                Start
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Exercise 4: Push-ups -->
+                    <div class="glass-card exercise-card" data-type="home" data-weak="false">
+                        <div class="exercise-header">
+                            <div class="exercise-info">
+                                <h3>Push-Ups</h3>
+                                <div class="exercise-meta">
+                                    <span class="exercise-tag home">Home</span>
+                                    <span class="exercise-tag beginner">Beginner</span>
+                                </div>
+                            </div>
+                            <div class="exercise-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                6 min
+                            </div>
+                        </div>
+                        <div class="exercise-avatar">
+                            <div class="avatar-figure pushup">
+                                <svg viewBox="0 0 100 60">
+                                    <circle class="figure-body" cx="80" cy="20" r="6"/>
+                                    <line class="figure-body" x1="74" y1="22" x2="35" y2="28"/>
+                                    <line class="figure-body" x1="35" y1="28" x2="15" y2="28"/>
+                                    <line class="figure-body" x1="70" y1="25" x2="72" y2="50"/>
+                                    <line class="figure-body" x1="60" y1="26" x2="58" y2="50"/>
+                                    <line class="figure-body" x1="25" y1="28" x2="25" y2="50"/>
+                                    <line class="figure-body" x1="15" y1="28" x2="15" y2="50"/>
+                                </svg>
+                            </div>
+                            <div class="muscle-targets">
+                                <span class="muscle-tag">Chest</span>
+                                <span class="muscle-tag">Triceps</span>
+                                <span class="muscle-tag">Shoulders</span>
+                            </div>
+                        </div>
+                        <div class="exercise-details">
+                            <div class="detail-box">
+                                <div class="detail-box-value">3</div>
+                                <div class="detail-box-label">Sets</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-box-value">12</div>
+                                <div class="detail-box-label">Reps</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="detail-box-value">60s</div>
+                                <div class="detail-box-label">Rest</div>
+                            </div>
+                        </div>
+                        <p class="exercise-description">Start in plank position with hands shoulder-width. Lower chest to floor, then push back up. Keep core tight throughout.</p>
+                        <div class="exercise-actions">
+                            <button class="btn-exercise secondary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Save
+                            </button>
+                            <button class="btn-exercise primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke="currentColor">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                Start
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Routine Builder Card -->
+                    <div class="glass-card routine-builder">
+                        <div class="routine-header">
+                            <div>
+                                <h2>Today's Routine</h2>
+                                <p class="metric-subtitle">Recommended workout based on your analysis</p>
+                            </div>
+                            <div class="routine-stats">
+                                <div class="routine-stat">
+                                    <div class="routine-stat-value">32</div>
+                                    <div class="routine-stat-label">Minutes</div>
+                                </div>
+                                <div class="routine-stat">
+                                    <div class="routine-stat-value">5</div>
+                                    <div class="routine-stat-label">Exercises</div>
+                                </div>
+                                <div class="routine-stat">
+                                    <div class="routine-stat-value">~280</div>
+                                    <div class="routine-stat-label">Calories</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="routine-timeline">
+                            <div class="routine-item">
+                                <div class="routine-number">1</div>
+                                <div class="routine-item-info">
+                                    <div class="routine-item-name">Warm-Up Stretches</div>
+                                    <div class="routine-item-detail">Dynamic mobility</div>
+                                </div>
+                                <div class="routine-item-duration">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    5 min
+                                </div>
+                            </div>
+                            <div class="routine-item">
+                                <div class="routine-number">2</div>
+                                <div class="routine-item-info">
+                                    <div class="routine-item-name">Bodyweight Squats</div>
+                                    <div class="routine-item-detail">3 sets × 15 reps</div>
+                                </div>
+                                <div class="routine-item-duration">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    8 min
+                                </div>
+                            </div>
+                            <div class="routine-item">
+                                <div class="routine-number">3</div>
+                                <div class="routine-item-info">
+                                    <div class="routine-item-name">Plank Hold</div>
+                                    <div class="routine-item-detail">3 sets × 45 sec • Core Focus</div>
+                                </div>
+                                <div class="routine-item-duration">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    5 min
+                                </div>
+                            </div>
+                            <div class="routine-item">
+                                <div class="routine-number">4</div>
+                                <div class="routine-item-info">
+                                    <div class="routine-item-name">Push-Ups</div>
+                                    <div class="routine-item-detail">3 sets × 12 reps</div>
+                                </div>
+                                <div class="routine-item-duration">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    6 min
+                                </div>
+                            </div>
+                            <div class="routine-item">
+                                <div class="routine-number">5</div>
+                                <div class="routine-item-info">
+                                    <div class="routine-item-name">Cool-Down Stretch</div>
+                                    <div class="routine-item-detail">Static stretching</div>
+                                </div>
+                                <div class="routine-item-duration">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    8 min
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="workout-actions">
+                    <button class="btn-secondary" id="back-to-simulator-workout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        Lifestyle Simulator
+                    </button>
+                    <button class="btn-primary" style="flex: 1;" id="start-routine-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        Start Full Routine
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 7: Nutrition Visualization -->
+        <section class="screen" id="screen-nutrition">
+            <button class="back-button" id="back-to-results-nutrition">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"/>
+                    <polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Back to Results
+            </button>
+
+            <div class="breakdown-header">
+                <div>
+                    <h1>Nutrition Guidance</h1>
+                    <p class="subtitle">AI-powered nutrition insights tailored to your body analysis and fitness goals.</p>
+                </div>
+            </div>
+
+            <div class="nutrition-content">
+                <!-- Protein Focus Banner -->
+                <div class="protein-banner">
+                    <div class="protein-banner-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <div class="protein-banner-text">
+                        <h3>Protein Priority for Your Goals</h3>
+                        <p>Based on your athletic build and muscle development goals, we recommend prioritizing protein intake to maintain and build lean mass.</p>
+                    </div>
+                    <div class="protein-target">
+                        <div class="protein-target-value">145g</div>
+                        <div class="protein-target-label">Daily Target</div>
+                    </div>
+                </div>
+
+                <div class="nutrition-grid">
+                    <!-- Macro Overview Card -->
+                    <div class="glass-card macro-overview">
+                        <div class="macro-header">
+                            <div>
+                                <h2>Daily Macro Targets</h2>
+                                <p class="subtitle" style="max-width: none;">Personalized macronutrient goals based on your body composition and activity level.</p>
+                            </div>
+                            <div class="calorie-target">
+                                <div class="calorie-number">2,450</div>
+                                <div class="calorie-label">Daily Calories</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 40px; align-items: center; flex-wrap: wrap;">
+                            <div class="macro-bars" style="flex: 1; min-width: 300px;">
+                                <!-- Protein Bar -->
+                                <div class="macro-bar-item">
+                                    <div class="macro-icon protein">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                            <path d="M2 17l10 5 10-5"/>
+                                            <path d="M2 12l10 5 10-5"/>
+                                        </svg>
+                                    </div>
+                                    <div class="macro-info">
+                                        <div class="macro-name-row">
+                                            <span class="macro-name">Protein</span>
+                                            <span class="macro-amount"><span>145g</span> / 145g target</span>
+                                        </div>
+                                        <div class="macro-bar-track">
+                                            <div class="macro-bar-fill protein" style="width: 100%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Carbs Bar -->
+                                <div class="macro-bar-item">
+                                    <div class="macro-icon carbs">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2a10 10 0 1 0 10 10"/>
+                                            <path d="M12 12V2"/>
+                                            <path d="M12 12H22"/>
+                                        </svg>
+                                    </div>
+                                    <div class="macro-info">
+                                        <div class="macro-name-row">
+                                            <span class="macro-name">Carbohydrates</span>
+                                            <span class="macro-amount"><span>280g</span> / 300g target</span>
+                                        </div>
+                                        <div class="macro-bar-track">
+                                            <div class="macro-bar-fill carbs" style="width: 93%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Fats Bar -->
+                                <div class="macro-bar-item">
+                                    <div class="macro-icon fats">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </div>
+                                    <div class="macro-info">
+                                        <div class="macro-name-row">
+                                            <span class="macro-name">Healthy Fats</span>
+                                            <span class="macro-amount"><span>72g</span> / 80g target</span>
+                                        </div>
+                                        <div class="macro-bar-track">
+                                            <div class="macro-bar-fill fats" style="width: 90%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Macro Circle Chart -->
+                            <div class="macro-chart">
+                                <svg class="macro-chart-svg" viewBox="0 0 100 100">
+                                    <circle class="macro-chart-bg" cx="50" cy="50" r="40"/>
+                                    <circle class="macro-chart-segment protein" cx="50" cy="50" r="40"
+                                            stroke-dasharray="251" stroke-dashoffset="125"/>
+                                    <circle class="macro-chart-segment carbs" cx="50" cy="50" r="40"
+                                            stroke-dasharray="251" stroke-dashoffset="175"/>
+                                    <circle class="macro-chart-segment fats" cx="50" cy="50" r="40"
+                                            stroke-dasharray="251" stroke-dashoffset="220"/>
+                                </svg>
+                                <div class="macro-chart-center">
+                                    <div class="chart-total">94%</div>
+                                    <div class="chart-label">On Track</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Meal Card 1: Breakfast -->
+                    <div class="glass-card meal-card">
+                        <div class="meal-header">
+                            <div>
+                                <div class="meal-time">Breakfast</div>
+                                <div class="meal-name">Power Protein Bowl</div>
+                            </div>
+                            <div class="meal-calories">
+                                <div class="meal-cal-value">520</div>
+                                <div class="meal-cal-label">kcal</div>
+                            </div>
+                        </div>
+
+                        <div class="portion-visual">
+                            <div class="portion-item">
+                                <div class="portion-icon protein-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <ellipse cx="12" cy="6" rx="8" ry="4"/>
+                                        <path d="M4 6v6c0 2.21 3.58 4 8 4s8-1.79 8-4V6"/>
+                                        <path d="M4 12v6c0 2.21 3.58 4 8 4s8-1.79 8-4v-6"/>
+                                    </svg>
+                                    <div class="portion-size">2</div>
+                                </div>
+                                <div class="portion-label">Eggs</div>
+                                <div class="portion-amount">140g</div>
+                            </div>
+                            <div class="portion-item">
+                                <div class="portion-icon carb-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M8 12h8"/>
+                                        <path d="M12 8v8"/>
+                                    </svg>
+                                    <div class="portion-size">1</div>
+                                </div>
+                                <div class="portion-label">Oats</div>
+                                <div class="portion-amount">80g</div>
+                            </div>
+                            <div class="portion-item">
+                                <div class="portion-icon veggie-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <path d="M7 17.5S5 15 5 12s2-5 2-5m10 10.5s2-2.5 2-5.5-2-5-2-5"/>
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    </svg>
+                                </div>
+                                <div class="portion-label">Berries</div>
+                                <div class="portion-amount">100g</div>
+                            </div>
+                        </div>
+
+                        <div class="meal-macros">
+                            <div class="meal-macro">
+                                <div class="meal-macro-value protein">38g</div>
+                                <div class="meal-macro-label">Protein</div>
+                            </div>
+                            <div class="meal-macro">
+                                <div class="meal-macro-value carbs">52g</div>
+                                <div class="meal-macro-label">Carbs</div>
+                            </div>
+                            <div class="meal-macro">
+                                <div class="meal-macro-value fats">18g</div>
+                                <div class="meal-macro-label">Fats</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Meal Card 2: Lunch -->
+                    <div class="glass-card meal-card">
+                        <div class="meal-header">
+                            <div>
+                                <div class="meal-time">Lunch</div>
+                                <div class="meal-name">Grilled Chicken Salad</div>
+                            </div>
+                            <div class="meal-calories">
+                                <div class="meal-cal-value">680</div>
+                                <div class="meal-cal-label">kcal</div>
+                            </div>
+                        </div>
+
+                        <div class="portion-visual">
+                            <div class="portion-item">
+                                <div class="portion-icon protein-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <path d="M15 11h.01"/>
+                                        <path d="M9 11h.01"/>
+                                        <path d="M4 15c-1-1-1-5 3-7 1.5-1 3-1.5 5-1.5s3.5.5 5 1.5c4 2 4 6 3 7"/>
+                                        <path d="M7.5 15c1.5 2 4 3 4.5 3s3-1 4.5-3"/>
+                                    </svg>
+                                    <div class="portion-size">1</div>
+                                </div>
+                                <div class="portion-label">Chicken</div>
+                                <div class="portion-amount">200g</div>
+                            </div>
+                            <div class="portion-item">
+                                <div class="portion-icon veggie-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    </svg>
+                                </div>
+                                <div class="portion-label">Greens</div>
+                                <div class="portion-amount">150g</div>
+                            </div>
+                            <div class="portion-item">
+                                <div class="portion-icon fat-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </div>
+                                <div class="portion-label">Olive Oil</div>
+                                <div class="portion-amount">2 tbsp</div>
+                            </div>
+                        </div>
+
+                        <div class="meal-macros">
+                            <div class="meal-macro">
+                                <div class="meal-macro-value protein">52g</div>
+                                <div class="meal-macro-label">Protein</div>
+                            </div>
+                            <div class="meal-macro">
+                                <div class="meal-macro-value carbs">28g</div>
+                                <div class="meal-macro-label">Carbs</div>
+                            </div>
+                            <div class="meal-macro">
+                                <div class="meal-macro-value fats">32g</div>
+                                <div class="meal-macro-label">Fats</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Food Recognition Card -->
+                    <div class="glass-card food-recognition">
+                        <h2 style="margin-bottom: 8px;">Snap Your Meal</h2>
+                        <p class="subtitle" style="max-width: none; margin-bottom: 20px;">Upload a photo and let AI estimate calories and macros instantly.</p>
+
+                        <div class="food-upload-zone">
+                            <div class="food-upload-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                    <circle cx="12" cy="13" r="4"/>
+                                </svg>
+                            </div>
+                            <p class="food-upload-text">Drop food photo here or click to browse</p>
+                            <p class="food-upload-hint">AI will identify foods and estimate portions</p>
+                        </div>
+                    </div>
+
+                    <!-- Meal Card 3: Dinner -->
+                    <div class="glass-card meal-card">
+                        <div class="meal-header">
+                            <div>
+                                <div class="meal-time">Dinner</div>
+                                <div class="meal-name">Salmon with Quinoa</div>
+                            </div>
+                            <div class="meal-calories">
+                                <div class="meal-cal-value">720</div>
+                                <div class="meal-cal-label">kcal</div>
+                            </div>
+                        </div>
+
+                        <div class="portion-visual">
+                            <div class="portion-item">
+                                <div class="portion-icon protein-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <path d="M2 12c2-4 6-7 10-7s8 3 10 7c-2 4-6 7-10 7s-8-3-10-7z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    <div class="portion-size">1</div>
+                                </div>
+                                <div class="portion-label">Salmon</div>
+                                <div class="portion-amount">180g</div>
+                            </div>
+                            <div class="portion-item">
+                                <div class="portion-icon carb-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M8 12h8"/>
+                                    </svg>
+                                </div>
+                                <div class="portion-label">Quinoa</div>
+                                <div class="portion-amount">150g</div>
+                            </div>
+                            <div class="portion-item">
+                                <div class="portion-icon veggie-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    </svg>
+                                </div>
+                                <div class="portion-label">Veggies</div>
+                                <div class="portion-amount">200g</div>
+                            </div>
+                        </div>
+
+                        <div class="meal-macros">
+                            <div class="meal-macro">
+                                <div class="meal-macro-value protein">45g</div>
+                                <div class="meal-macro-label">Protein</div>
+                            </div>
+                            <div class="meal-macro">
+                                <div class="meal-macro-value carbs">58g</div>
+                                <div class="meal-macro-label">Carbs</div>
+                            </div>
+                            <div class="meal-macro">
+                                <div class="meal-macro-value fats">22g</div>
+                                <div class="meal-macro-label">Fats</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Educational Insights -->
+                    <div class="glass-card nutrition-insights">
+                        <h2 style="margin-bottom: 8px;">Nutrition Insights</h2>
+                        <p class="subtitle" style="max-width: none;">Science-backed tips personalized for your body type and goals.</p>
+
+                        <div class="insights-grid">
+                            <div class="insight-card protein-insight">
+                                <div class="insight-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                        <path d="M2 17l10 5 10-5"/>
+                                        <path d="M2 12l10 5 10-5"/>
+                                    </svg>
+                                </div>
+                                <h3 class="insight-title">Protein Timing</h3>
+                                <p class="insight-text">Distribute protein evenly across 4-5 meals for optimal muscle protein synthesis. Aim for 25-40g per meal.</p>
+                            </div>
+
+                            <div class="insight-card timing-insight">
+                                <div class="insight-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                </div>
+                                <h3 class="insight-title">Meal Frequency</h3>
+                                <p class="insight-text">For your mesomorph build, eating every 3-4 hours helps maintain steady energy and supports metabolism.</p>
+                            </div>
+
+                            <div class="insight-card hydration-insight">
+                                <div class="insight-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="insight-title">Hydration Goal</h3>
+                                <p class="insight-text">Based on your activity level, aim for 3.2L of water daily. Hydration impacts performance and recovery.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="nutrition-actions">
+                        <button class="btn-secondary" id="back-to-workout-nutrition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6.5 6.5h11"/>
+                                <path d="M6.5 17.5h11"/>
+                                <path d="M4 10v4"/>
+                                <path d="M20 10v4"/>
+                            </svg>
+                            View Workouts
+                        </button>
+                        <button class="btn-secondary" id="back-to-simulator-nutrition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            Lifestyle Simulator
+                        </button>
+                        <button class="btn-primary" style="flex: 1;" id="generate-meal-plan-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                            Generate Full Meal Plan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    <script src="script.js"></script>
+</html>
