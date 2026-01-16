@@ -812,6 +812,13 @@
 
         async function startCamera() {
             try {
+                // Check if mediaDevices API is available
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Camera is not supported on this browser. Please use a modern browser like Chrome, Safari, or Firefox.');
+                    setInputMode('upload');
+                    return;
+                }
+
                 // Stop any existing stream
                 stopCamera();
 
@@ -825,11 +832,39 @@
 
                 cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
                 cameraVideo.srcObject = cameraStream;
-                cameraVideo.play();
+                await cameraVideo.play();
                 console.log('Camera started:', currentFacingMode);
             } catch (err) {
                 console.error('Camera error:', err);
-                alert('Could not access camera. Please check permissions and try again.');
+                let errorMessage = 'Could not access camera.\n\n';
+
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    errorMessage += 'Camera permission was denied.\n\n';
+                    errorMessage += 'To fix this:\n';
+                    errorMessage += '• iPhone/iPad: Go to Settings > Safari > Camera, set to "Allow"\n';
+                    errorMessage += '• Android: Tap the lock icon in the address bar and allow camera\n';
+                    errorMessage += '• Then refresh this page and try again';
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    errorMessage += 'No camera found on this device.';
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    errorMessage += 'Camera is being used by another app. Please close other apps using the camera and try again.';
+                } else if (err.name === 'OverconstrainedError') {
+                    errorMessage += 'Camera does not support the requested settings. Trying with default settings...';
+                    // Try again with simpler constraints
+                    try {
+                        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        cameraVideo.srcObject = cameraStream;
+                        await cameraVideo.play();
+                        console.log('Camera started with fallback constraints');
+                        return;
+                    } catch (fallbackErr) {
+                        errorMessage = 'Could not access camera with any settings. Please try again.';
+                    }
+                } else {
+                    errorMessage += 'Error: ' + err.message;
+                }
+
+                alert(errorMessage);
                 setInputMode('upload');
             }
         }
@@ -1713,6 +1748,13 @@
 
             async function startFoodCamera() {
                 try {
+                    // Check if mediaDevices API is available
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        alert('Camera is not supported on this browser. Please use a modern browser like Chrome, Safari, or Firefox.');
+                        setFoodInputMode('upload');
+                        return;
+                    }
+
                     stopFoodCamera();
                     const constraints = {
                         video: {
@@ -1723,10 +1765,36 @@
                     };
                     foodCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
                     foodCameraVideo.srcObject = foodCameraStream;
-                    foodCameraVideo.play();
+                    await foodCameraVideo.play();
                 } catch (err) {
                     console.error('Food camera error:', err);
-                    alert('Could not access camera. Please check permissions.');
+                    let errorMessage = 'Could not access camera.\n\n';
+
+                    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                        errorMessage += 'Camera permission was denied.\n\n';
+                        errorMessage += 'To fix this:\n';
+                        errorMessage += '• iPhone/iPad: Go to Settings > Safari > Camera, set to "Allow"\n';
+                        errorMessage += '• Android: Tap the lock icon in the address bar and allow camera\n';
+                        errorMessage += '• Then refresh this page and try again';
+                    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                        errorMessage += 'No camera found on this device.';
+                    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                        errorMessage += 'Camera is being used by another app. Please close other apps using the camera and try again.';
+                    } else if (err.name === 'OverconstrainedError') {
+                        // Try again with simpler constraints
+                        try {
+                            foodCameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                            foodCameraVideo.srcObject = foodCameraStream;
+                            await foodCameraVideo.play();
+                            return;
+                        } catch (fallbackErr) {
+                            errorMessage = 'Could not access camera with any settings. Please try again.';
+                        }
+                    } else {
+                        errorMessage += 'Error: ' + err.message;
+                    }
+
+                    alert(errorMessage);
                     setFoodInputMode('upload');
                 }
             }
