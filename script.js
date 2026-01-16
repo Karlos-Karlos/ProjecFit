@@ -635,6 +635,20 @@
         const viewBtns = document.querySelectorAll('.view-btn');
         const navSteps = document.querySelectorAll('.nav-step');
 
+        // Camera elements
+        const cameraZone = document.getElementById('camera-zone');
+        const cameraVideo = document.getElementById('camera-video');
+        const cameraCanvas = document.getElementById('camera-canvas');
+        const uploadModeBtn = document.getElementById('upload-mode-btn');
+        const cameraModeBtn = document.getElementById('camera-mode-btn');
+        const captureBtn = document.getElementById('capture-btn');
+        const switchCameraBtn = document.getElementById('switch-camera-btn');
+        const closeCameraBtn = document.getElementById('close-camera-btn');
+
+        // Camera state
+        let cameraStream = null;
+        let currentFacingMode = 'environment'; // 'environment' = back camera, 'user' = front camera
+
         // Analysis steps
         const analysisSteps = ['step-pose', 'step-extract', 'step-analyze', 'step-generate'];
 
@@ -652,6 +666,7 @@
             });
 
             setupUpload();
+            setupCamera();
             setupNavigation();
             setupResults();
             setupBreakdown();
@@ -741,6 +756,137 @@
             state.analysisResult = null;
             analyzeBtn.disabled = true;
             fileInput.value = '';
+        }
+
+        // Camera functionality
+        function setupCamera() {
+            if (!uploadModeBtn || !cameraModeBtn) return;
+
+            // Mode toggle buttons
+            uploadModeBtn.addEventListener('click', () => {
+                setInputMode('upload');
+            });
+
+            cameraModeBtn.addEventListener('click', () => {
+                setInputMode('camera');
+            });
+
+            // Camera control buttons
+            if (captureBtn) {
+                captureBtn.addEventListener('click', capturePhoto);
+            }
+
+            if (switchCameraBtn) {
+                switchCameraBtn.addEventListener('click', switchCamera);
+            }
+
+            if (closeCameraBtn) {
+                closeCameraBtn.addEventListener('click', () => {
+                    setInputMode('upload');
+                });
+            }
+        }
+
+        function setInputMode(mode) {
+            if (mode === 'camera') {
+                // Switch to camera mode
+                uploadModeBtn.classList.remove('active');
+                cameraModeBtn.classList.add('active');
+                uploadZone.style.display = 'none';
+                uploadPreview.classList.remove('has-image');
+                cameraZone.style.display = 'block';
+                startCamera();
+            } else {
+                // Switch to upload mode
+                cameraModeBtn.classList.remove('active');
+                uploadModeBtn.classList.add('active');
+                cameraZone.style.display = 'none';
+                stopCamera();
+                if (!state.hasImage) {
+                    uploadZone.style.display = 'flex';
+                } else {
+                    uploadPreview.classList.add('has-image');
+                }
+            }
+        }
+
+        async function startCamera() {
+            try {
+                // Stop any existing stream
+                stopCamera();
+
+                const constraints = {
+                    video: {
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1280 },
+                        height: { ideal: 1920 }
+                    }
+                };
+
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                cameraVideo.srcObject = cameraStream;
+                cameraVideo.play();
+                console.log('Camera started:', currentFacingMode);
+            } catch (err) {
+                console.error('Camera error:', err);
+                alert('Could not access camera. Please check permissions and try again.');
+                setInputMode('upload');
+            }
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            if (cameraVideo) {
+                cameraVideo.srcObject = null;
+            }
+        }
+
+        async function switchCamera() {
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            await startCamera();
+        }
+
+        function capturePhoto() {
+            if (!cameraVideo || !cameraCanvas) return;
+
+            // Set canvas size to video size
+            cameraCanvas.width = cameraVideo.videoWidth;
+            cameraCanvas.height = cameraVideo.videoHeight;
+
+            // Draw video frame to canvas
+            const ctx = cameraCanvas.getContext('2d');
+
+            // Mirror the image if using front camera
+            if (currentFacingMode === 'user') {
+                ctx.translate(cameraCanvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+
+            ctx.drawImage(cameraVideo, 0, 0);
+
+            // Convert to data URL
+            const imageData = cameraCanvas.toDataURL('image/jpeg', 0.9);
+
+            // Set preview image
+            previewImage.src = imageData;
+            state.imageData = imageData;
+            state.hasImage = true;
+
+            // Stop camera and show preview
+            stopCamera();
+            cameraZone.style.display = 'none';
+            uploadPreview.classList.add('has-image');
+            uploadZone.style.display = 'none';
+
+            // Reset mode buttons
+            cameraModeBtn.classList.remove('active');
+            uploadModeBtn.classList.add('active');
+
+            updateAnalyzeButton();
+            console.log('Photo captured from camera');
         }
 
         // Navigation
@@ -1093,10 +1239,20 @@
         function animateGauges() {
             const gauges = document.querySelectorAll('.gauge-fill');
             gauges.forEach(gauge => {
-                const value = parseInt(gauge.dataset.value);
+                const value = parseInt(gauge.dataset.value) || 0;
                 const circumference = 2 * Math.PI * 40;
                 const offset = circumference - (value / 100) * circumference;
                 gauge.style.strokeDashoffset = offset;
+
+                // Apply score-based gradient class
+                gauge.classList.remove('score-low', 'score-medium', 'score-high');
+                if (value < 40) {
+                    gauge.classList.add('score-low');
+                } else if (value < 70) {
+                    gauge.classList.add('score-medium');
+                } else {
+                    gauge.classList.add('score-high');
+                }
             });
         }
 
@@ -1339,6 +1495,495 @@
             document.getElementById('generate-meal-plan-btn').addEventListener('click', () => {
                 alert('Generating personalized meal plan! (Demo mode)');
             });
+
+            // Setup food recognition
+            setupFoodRecognition();
+        }
+
+        // MobileNet model for food recognition
+        let mobilenetModel = null;
+
+        // Initialize MobileNet
+        async function initMobileNet() {
+            try {
+                console.log('Loading MobileNet model...');
+                mobilenetModel = await mobilenet.load({
+                    version: 2,
+                    alpha: 1.0
+                });
+                console.log('MobileNet model loaded successfully!');
+                return true;
+            } catch (error) {
+                console.error('Failed to load MobileNet:', error);
+                return false;
+            }
+        }
+
+        // Food nutrition database - maps image classifications to nutrition data
+        const foodNutritionDB = {
+            // Fruits
+            'banana': { name: 'Banana', portion: '1 medium (118g)', calories: 105, protein: 1, carbs: 27, fats: 0, icon: '🍌' },
+            'orange': { name: 'Orange', portion: '1 medium (131g)', calories: 62, protein: 1, carbs: 15, fats: 0, icon: '🍊' },
+            'apple': { name: 'Apple', portion: '1 medium (182g)', calories: 95, protein: 0, carbs: 25, fats: 0, icon: '🍎' },
+            'strawberry': { name: 'Strawberries', portion: '1 cup (144g)', calories: 46, protein: 1, carbs: 11, fats: 0, icon: '🍓' },
+            'pineapple': { name: 'Pineapple', portion: '1 cup (165g)', calories: 82, protein: 1, carbs: 22, fats: 0, icon: '🍍' },
+            'lemon': { name: 'Lemon', portion: '1 medium (58g)', calories: 17, protein: 1, carbs: 5, fats: 0, icon: '🍋' },
+            'fig': { name: 'Fig', portion: '1 medium (50g)', calories: 37, protein: 0, carbs: 10, fats: 0, icon: '🍇' },
+            'pomegranate': { name: 'Pomegranate', portion: '1/2 cup (87g)', calories: 72, protein: 1, carbs: 16, fats: 1, icon: '🍎' },
+            'granny_smith': { name: 'Green Apple', portion: '1 medium (182g)', calories: 95, protein: 0, carbs: 25, fats: 0, icon: '🍏' },
+
+            // Vegetables
+            'broccoli': { name: 'Broccoli', portion: '1 cup (91g)', calories: 55, protein: 4, carbs: 11, fats: 1, icon: '🥦' },
+            'cauliflower': { name: 'Cauliflower', portion: '1 cup (100g)', calories: 25, protein: 2, carbs: 5, fats: 0, icon: '🥬' },
+            'cucumber': { name: 'Cucumber', portion: '1 medium (201g)', calories: 30, protein: 1, carbs: 6, fats: 0, icon: '🥒' },
+            'bell_pepper': { name: 'Bell Pepper', portion: '1 medium (119g)', calories: 24, protein: 1, carbs: 6, fats: 0, icon: '🫑' },
+            'mushroom': { name: 'Mushrooms', portion: '1 cup (70g)', calories: 15, protein: 2, carbs: 2, fats: 0, icon: '🍄' },
+            'head_cabbage': { name: 'Cabbage', portion: '1 cup (89g)', calories: 22, protein: 1, carbs: 5, fats: 0, icon: '🥬' },
+            'artichoke': { name: 'Artichoke', portion: '1 medium (128g)', calories: 60, protein: 4, carbs: 13, fats: 0, icon: '🌿' },
+            'zucchini': { name: 'Zucchini', portion: '1 medium (196g)', calories: 33, protein: 2, carbs: 6, fats: 1, icon: '🥒' },
+            'spaghetti_squash': { name: 'Spaghetti Squash', portion: '1 cup (155g)', calories: 42, protein: 1, carbs: 10, fats: 0, icon: '🎃' },
+            'butternut_squash': { name: 'Butternut Squash', portion: '1 cup (205g)', calories: 82, protein: 2, carbs: 22, fats: 0, icon: '🎃' },
+            'acorn_squash': { name: 'Acorn Squash', portion: '1 cup (205g)', calories: 115, protein: 2, carbs: 30, fats: 0, icon: '🎃' },
+
+            // Prepared Foods
+            'pizza': { name: 'Pizza Slice', portion: '1 slice (107g)', calories: 285, protein: 12, carbs: 36, fats: 10, icon: '🍕' },
+            'hamburger': { name: 'Hamburger', portion: '1 burger (226g)', calories: 540, protein: 34, carbs: 40, fats: 27, icon: '🍔' },
+            'cheeseburger': { name: 'Cheeseburger', portion: '1 burger (256g)', calories: 620, protein: 38, carbs: 42, fats: 33, icon: '🍔' },
+            'hotdog': { name: 'Hot Dog', portion: '1 hot dog (116g)', calories: 290, protein: 11, carbs: 24, fats: 17, icon: '🌭' },
+            'french_fries': { name: 'French Fries', portion: 'medium (117g)', calories: 365, protein: 4, carbs: 48, fats: 17, icon: '🍟' },
+            'burrito': { name: 'Burrito', portion: '1 burrito (272g)', calories: 430, protein: 19, carbs: 50, fats: 18, icon: '🌯' },
+            'taco': { name: 'Taco', portion: '1 taco (85g)', calories: 170, protein: 8, carbs: 13, fats: 9, icon: '🌮' },
+            'sandwich': { name: 'Sandwich', portion: '1 sandwich (150g)', calories: 350, protein: 15, carbs: 35, fats: 16, icon: '🥪' },
+            'bagel': { name: 'Bagel', portion: '1 bagel (98g)', calories: 277, protein: 11, carbs: 55, fats: 1, icon: '🥯' },
+
+            // Pasta & Rice
+            'spaghetti_bolognese': { name: 'Spaghetti Bolognese', portion: '1 plate (350g)', calories: 520, protein: 25, carbs: 65, fats: 18, icon: '🍝' },
+            'carbonara': { name: 'Pasta Carbonara', portion: '1 plate (300g)', calories: 580, protein: 22, carbs: 55, fats: 28, icon: '🍝' },
+            'plate': { name: 'Rice Bowl', portion: '1 bowl (200g)', calories: 260, protein: 5, carbs: 57, fats: 1, icon: '🍚' },
+            'meat_loaf': { name: 'Meatloaf', portion: '1 slice (113g)', calories: 250, protein: 17, carbs: 8, fats: 17, icon: '🍖' },
+
+            // Breakfast
+            'waffle': { name: 'Waffle', portion: '1 waffle (75g)', calories: 218, protein: 6, carbs: 25, fats: 11, icon: '🧇' },
+            'pancake': { name: 'Pancakes', portion: '3 pancakes (114g)', calories: 280, protein: 8, carbs: 45, fats: 8, icon: '🥞' },
+            'eggs': { name: 'Eggs', portion: '2 large', calories: 140, protein: 12, carbs: 1, fats: 10, icon: '🥚' },
+            'breakfast_burrito': { name: 'Breakfast Burrito', portion: '1 burrito (163g)', calories: 305, protein: 13, carbs: 29, fats: 15, icon: '🌯' },
+
+            // Soups & Bowls
+            'soup': { name: 'Soup', portion: '1 bowl (245g)', calories: 150, protein: 8, carbs: 18, fats: 5, icon: '🍜' },
+            'consomme': { name: 'Broth/Consomme', portion: '1 cup (240g)', calories: 29, protein: 5, carbs: 2, fats: 0, icon: '🥣' },
+            'guacamole': { name: 'Guacamole', portion: '1/4 cup (57g)', calories: 90, protein: 1, carbs: 5, fats: 8, icon: '🥑' },
+
+            // Desserts
+            'ice_cream': { name: 'Ice Cream', portion: '1/2 cup (66g)', calories: 137, protein: 2, carbs: 16, fats: 7, icon: '🍦' },
+            'chocolate_cake': { name: 'Chocolate Cake', portion: '1 slice (95g)', calories: 352, protein: 4, carbs: 51, fats: 15, icon: '🍰' },
+            'cheesecake': { name: 'Cheesecake', portion: '1 slice (125g)', calories: 401, protein: 7, carbs: 33, fats: 28, icon: '🍰' },
+            'cupcake': { name: 'Cupcake', portion: '1 cupcake (55g)', calories: 175, protein: 2, carbs: 26, fats: 7, icon: '🧁' },
+            'brownie': { name: 'Brownie', portion: '1 brownie (56g)', calories: 227, protein: 3, carbs: 36, fats: 9, icon: '🍫' },
+            'pretzel': { name: 'Pretzel', portion: '1 large (115g)', calories: 380, protein: 9, carbs: 79, fats: 4, icon: '🥨' },
+            'doughnut': { name: 'Doughnut', portion: '1 doughnut (60g)', calories: 252, protein: 3, carbs: 29, fats: 14, icon: '🍩' },
+
+            // Seafood
+            'lobster': { name: 'Lobster', portion: '3 oz (85g)', calories: 76, protein: 16, carbs: 0, fats: 1, icon: '🦞' },
+            'crab': { name: 'Crab', portion: '3 oz (85g)', calories: 82, protein: 16, carbs: 0, fats: 1, icon: '🦀' },
+            'shrimp': { name: 'Shrimp', portion: '3 oz (85g)', calories: 84, protein: 18, carbs: 0, fats: 1, icon: '🦐' },
+
+            // Bread & Bakery
+            'bread': { name: 'Bread', portion: '1 slice (30g)', calories: 79, protein: 3, carbs: 15, fats: 1, icon: '🍞' },
+            'baguette': { name: 'Baguette', portion: '2 slices (60g)', calories: 158, protein: 5, carbs: 31, fats: 1, icon: '🥖' },
+            'croissant': { name: 'Croissant', portion: '1 croissant (57g)', calories: 231, protein: 5, carbs: 26, fats: 12, icon: '🥐' },
+
+            // Meats
+            'steak': { name: 'Steak', portion: '6 oz (170g)', calories: 271, protein: 26, carbs: 0, fats: 18, icon: '🥩' },
+            'pork_chop': { name: 'Pork Chop', portion: '1 chop (145g)', calories: 236, protein: 27, carbs: 0, fats: 14, icon: '🍖' },
+            'chicken': { name: 'Chicken Breast', portion: '1 breast (172g)', calories: 284, protein: 53, carbs: 0, fats: 6, icon: '🍗' },
+            'drumstick': { name: 'Chicken Drumstick', portion: '1 drumstick (96g)', calories: 152, protein: 20, carbs: 0, fats: 8, icon: '🍗' },
+
+            // Drinks
+            'espresso': { name: 'Espresso', portion: '1 shot (30ml)', calories: 3, protein: 0, carbs: 0, fats: 0, icon: '☕' },
+            'cup': { name: 'Coffee', portion: '1 cup (240ml)', calories: 5, protein: 0, carbs: 0, fats: 0, icon: '☕' },
+            'beer_glass': { name: 'Beer', portion: '1 glass (355ml)', calories: 153, protein: 2, carbs: 13, fats: 0, icon: '🍺' },
+            'wine_glass': { name: 'Wine', portion: '1 glass (150ml)', calories: 125, protein: 0, carbs: 4, fats: 0, icon: '🍷' },
+            'cocktail': { name: 'Cocktail', portion: '1 glass (150ml)', calories: 180, protein: 0, carbs: 15, fats: 0, icon: '🍹' },
+
+            // Other common foods
+            'cheese': { name: 'Cheese', portion: '1 oz (28g)', calories: 113, protein: 7, carbs: 0, fats: 9, icon: '🧀' },
+            'butter': { name: 'Butter', portion: '1 tbsp (14g)', calories: 102, protein: 0, carbs: 0, fats: 12, icon: '🧈' },
+            'chocolate': { name: 'Chocolate', portion: '1 bar (44g)', calories: 235, protein: 3, carbs: 26, fats: 13, icon: '🍫' },
+            'popcorn': { name: 'Popcorn', portion: '3 cups (24g)', calories: 93, protein: 3, carbs: 19, fats: 1, icon: '🍿' },
+            'candy': { name: 'Candy', portion: '1 oz (28g)', calories: 110, protein: 0, carbs: 27, fats: 0, icon: '🍬' },
+
+            // Salads
+            'salad': { name: 'Garden Salad', portion: '2 cups (150g)', calories: 35, protein: 2, carbs: 7, fats: 0, icon: '🥗' },
+            'caesar_salad': { name: 'Caesar Salad', portion: '1 bowl (200g)', calories: 190, protein: 8, carbs: 8, fats: 14, icon: '🥗' },
+
+            // Default fallback
+            'food': { name: 'Mixed Food', portion: '1 serving', calories: 250, protein: 10, carbs: 30, fats: 10, icon: '🍽️' }
+        };
+
+        // Food Recognition functionality
+        function setupFoodRecognition() {
+            const foodUploadZone = document.getElementById('food-upload-zone');
+            const foodFileInput = document.getElementById('food-file-input');
+            const foodCameraZone = document.getElementById('food-camera-zone');
+            const foodCameraVideo = document.getElementById('food-camera-video');
+            const foodCameraCanvas = document.getElementById('food-camera-canvas');
+            const foodUploadModeBtn = document.getElementById('food-upload-mode-btn');
+            const foodCameraModeBtn = document.getElementById('food-camera-mode-btn');
+            const foodCaptureBtn = document.getElementById('food-capture-btn');
+            const foodSwitchCameraBtn = document.getElementById('food-switch-camera-btn');
+            const foodCloseCameraBtn = document.getElementById('food-close-camera-btn');
+            const foodPreview = document.getElementById('food-preview');
+            const foodPreviewImage = document.getElementById('food-preview-image');
+            const foodRemovePreview = document.getElementById('food-remove-preview');
+            const analyzeFoodBtn = document.getElementById('analyze-food-btn');
+            const foodResults = document.getElementById('food-results');
+
+            if (!foodUploadZone) return;
+
+            // Initialize MobileNet when entering nutrition screen
+            initMobileNet();
+
+            let foodCameraStream = null;
+            let foodFacingMode = 'environment';
+            let foodImageData = null;
+
+            // Mode toggle
+            foodUploadModeBtn?.addEventListener('click', () => setFoodInputMode('upload'));
+            foodCameraModeBtn?.addEventListener('click', () => setFoodInputMode('camera'));
+
+            // Upload zone click
+            foodUploadZone.addEventListener('click', () => foodFileInput?.click());
+
+            // File input change
+            foodFileInput?.addEventListener('change', (e) => {
+                if (e.target.files.length) handleFoodFile(e.target.files[0]);
+            });
+
+            // Drag and drop
+            foodUploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                foodUploadZone.classList.add('dragover');
+            });
+
+            foodUploadZone.addEventListener('dragleave', () => {
+                foodUploadZone.classList.remove('dragover');
+            });
+
+            foodUploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                foodUploadZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) handleFoodFile(e.dataTransfer.files[0]);
+            });
+
+            // Camera controls
+            foodCaptureBtn?.addEventListener('click', captureFoodPhoto);
+            foodSwitchCameraBtn?.addEventListener('click', switchFoodCamera);
+            foodCloseCameraBtn?.addEventListener('click', () => setFoodInputMode('upload'));
+
+            // Remove preview
+            foodRemovePreview?.addEventListener('click', clearFoodPreview);
+
+            // Analyze food button
+            analyzeFoodBtn?.addEventListener('click', analyzeFood);
+
+            // Add to log button
+            document.getElementById('add-to-log-btn')?.addEventListener('click', () => {
+                alert('Food added to daily log! (Demo mode)');
+                clearFoodPreview();
+            });
+
+            function setFoodInputMode(mode) {
+                if (mode === 'camera') {
+                    foodUploadModeBtn?.classList.remove('active');
+                    foodCameraModeBtn?.classList.add('active');
+                    foodUploadZone.style.display = 'none';
+                    foodPreview.style.display = 'none';
+                    foodCameraZone.style.display = 'block';
+                    startFoodCamera();
+                } else {
+                    foodCameraModeBtn?.classList.remove('active');
+                    foodUploadModeBtn?.classList.add('active');
+                    foodCameraZone.style.display = 'none';
+                    stopFoodCamera();
+                    if (!foodImageData) {
+                        foodUploadZone.style.display = 'block';
+                    }
+                }
+            }
+
+            async function startFoodCamera() {
+                try {
+                    stopFoodCamera();
+                    const constraints = {
+                        video: {
+                            facingMode: foodFacingMode,
+                            width: { ideal: 1280 },
+                            height: { ideal: 960 }
+                        }
+                    };
+                    foodCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    foodCameraVideo.srcObject = foodCameraStream;
+                    foodCameraVideo.play();
+                } catch (err) {
+                    console.error('Food camera error:', err);
+                    alert('Could not access camera. Please check permissions.');
+                    setFoodInputMode('upload');
+                }
+            }
+
+            function stopFoodCamera() {
+                if (foodCameraStream) {
+                    foodCameraStream.getTracks().forEach(track => track.stop());
+                    foodCameraStream = null;
+                }
+                if (foodCameraVideo) {
+                    foodCameraVideo.srcObject = null;
+                }
+            }
+
+            async function switchFoodCamera() {
+                foodFacingMode = foodFacingMode === 'environment' ? 'user' : 'environment';
+                await startFoodCamera();
+            }
+
+            function captureFoodPhoto() {
+                if (!foodCameraVideo || !foodCameraCanvas) return;
+
+                foodCameraCanvas.width = foodCameraVideo.videoWidth;
+                foodCameraCanvas.height = foodCameraVideo.videoHeight;
+
+                const ctx = foodCameraCanvas.getContext('2d');
+                if (foodFacingMode === 'user') {
+                    ctx.translate(foodCameraCanvas.width, 0);
+                    ctx.scale(-1, 1);
+                }
+                ctx.drawImage(foodCameraVideo, 0, 0);
+
+                foodImageData = foodCameraCanvas.toDataURL('image/jpeg', 0.9);
+                showFoodPreview(foodImageData);
+                stopFoodCamera();
+                foodCameraZone.style.display = 'none';
+                foodCameraModeBtn?.classList.remove('active');
+                foodUploadModeBtn?.classList.add('active');
+            }
+
+            function handleFoodFile(file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('Please upload an image file');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    foodImageData = e.target.result;
+                    showFoodPreview(foodImageData);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function showFoodPreview(imageData) {
+                foodPreviewImage.src = imageData;
+                foodPreview.style.display = 'block';
+                foodUploadZone.style.display = 'none';
+                analyzeFoodBtn.style.display = 'flex';
+                foodResults.style.display = 'none';
+            }
+
+            function clearFoodPreview() {
+                foodImageData = null;
+                foodPreviewImage.src = '';
+                foodPreview.style.display = 'none';
+                foodUploadZone.style.display = 'block';
+                analyzeFoodBtn.style.display = 'none';
+                foodResults.style.display = 'none';
+                if (foodFileInput) foodFileInput.value = '';
+            }
+
+            async function analyzeFood() {
+                // Use real MobileNet AI for food recognition
+                analyzeFoodBtn.disabled = true;
+                analyzeFoodBtn.innerHTML = `
+                    <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25"/>
+                        <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-linecap="round"/>
+                    </svg>
+                    Analyzing with AI...
+                `;
+
+                try {
+                    // Ensure MobileNet is loaded
+                    if (!mobilenetModel) {
+                        console.log('Loading MobileNet...');
+                        await initMobileNet();
+                    }
+
+                    if (!mobilenetModel) {
+                        throw new Error('Could not load AI model');
+                    }
+
+                    // Create image element for classification
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = foodImageData;
+                    });
+
+                    // Classify the image using MobileNet
+                    console.log('Classifying image...');
+                    const predictions = await mobilenetModel.classify(img, 5);
+                    console.log('MobileNet predictions:', predictions);
+
+                    // Process predictions and match to food database
+                    const results = processFoodPredictions(predictions);
+                    displayFoodResults(results);
+
+                } catch (error) {
+                    console.error('Food analysis error:', error);
+                    // Fallback to simulation if AI fails
+                    const results = simulateFoodRecognition();
+                    displayFoodResults(results);
+                }
+
+                analyzeFoodBtn.disabled = false;
+                analyzeFoodBtn.style.display = 'none';
+            }
+
+            function processFoodPredictions(predictions) {
+                const detectedFoods = [];
+                let maxProbability = 0;
+
+                for (const prediction of predictions) {
+                    const className = prediction.className.toLowerCase();
+                    const probability = prediction.probability;
+
+                    if (probability > maxProbability) {
+                        maxProbability = probability;
+                    }
+
+                    // Search for matching food in our database
+                    let matchedFood = null;
+
+                    // Check each word in the prediction
+                    const words = className.split(/[,\s]+/);
+                    for (const word of words) {
+                        const cleanWord = word.replace(/[^a-z_]/g, '');
+
+                        // Direct match
+                        if (foodNutritionDB[cleanWord]) {
+                            matchedFood = { ...foodNutritionDB[cleanWord] };
+                            break;
+                        }
+
+                        // Partial match search
+                        for (const [key, value] of Object.entries(foodNutritionDB)) {
+                            if (key.includes(cleanWord) || cleanWord.includes(key) ||
+                                value.name.toLowerCase().includes(cleanWord)) {
+                                matchedFood = { ...value };
+                                break;
+                            }
+                        }
+
+                        if (matchedFood) break;
+                    }
+
+                    // If we found a match and probability is decent, add it
+                    if (matchedFood && probability > 0.05) {
+                        // Avoid duplicates
+                        if (!detectedFoods.find(f => f.name === matchedFood.name)) {
+                            matchedFood.confidence = probability;
+                            detectedFoods.push(matchedFood);
+                        }
+                    }
+                }
+
+                // If no foods detected, use the top prediction with a generic entry
+                if (detectedFoods.length === 0) {
+                    const topPrediction = predictions[0];
+                    detectedFoods.push({
+                        name: topPrediction.className.split(',')[0],
+                        portion: '1 serving',
+                        calories: 200,
+                        protein: 8,
+                        carbs: 25,
+                        fats: 8,
+                        icon: '🍽️',
+                        confidence: topPrediction.probability
+                    });
+                }
+
+                // Determine overall confidence
+                let confidence = 'high';
+                if (maxProbability < 0.3) confidence = 'low';
+                else if (maxProbability < 0.6) confidence = 'medium';
+
+                return {
+                    foods: detectedFoods.slice(0, 4), // Max 4 items
+                    confidence: confidence,
+                    rawPredictions: predictions
+                };
+            }
+
+            function simulateFoodRecognition() {
+                // Fallback simulation if AI fails
+                const foodDatabase = [
+                    { name: 'Mixed Meal', portion: '1 serving', calories: 450, protein: 25, carbs: 45, fats: 15, icon: '🍽️' }
+                ];
+
+                return {
+                    foods: foodDatabase,
+                    confidence: 'low'
+                };
+            }
+
+            function displayFoodResults(results) {
+                const detectedFoodsEl = document.getElementById('detected-foods');
+                const confidenceEl = document.getElementById('food-confidence');
+                const totalCaloriesEl = document.getElementById('food-total-calories');
+                const totalProteinEl = document.getElementById('food-total-protein');
+                const totalCarbsEl = document.getElementById('food-total-carbs');
+                const totalFatsEl = document.getElementById('food-total-fats');
+
+                // Set confidence
+                confidenceEl.textContent = results.confidence.charAt(0).toUpperCase() + results.confidence.slice(1) + ' Confidence';
+                confidenceEl.className = 'food-confidence ' + results.confidence;
+
+                // Calculate totals
+                let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFats = 0;
+
+                // Generate food items HTML
+                let foodsHTML = '';
+                results.foods.forEach(food => {
+                    totalCalories += food.calories;
+                    totalProtein += food.protein;
+                    totalCarbs += food.carbs;
+                    totalFats += food.fats;
+
+                    foodsHTML += `
+                        <div class="detected-food-item">
+                            <div class="food-item-icon">${food.icon}</div>
+                            <div class="food-item-info">
+                                <div class="food-item-name">${food.name}</div>
+                                <div class="food-item-portion">${food.portion}</div>
+                            </div>
+                            <div class="food-item-calories">
+                                <div class="food-item-cal-value">${food.calories}</div>
+                                <div class="food-item-cal-label">kcal</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                detectedFoodsEl.innerHTML = foodsHTML;
+                totalCaloriesEl.textContent = totalCalories + ' kcal';
+                totalProteinEl.textContent = totalProtein + 'g';
+                totalCarbsEl.textContent = totalCarbs + 'g';
+                totalFatsEl.textContent = totalFats + 'g';
+
+                foodResults.style.display = 'block';
+            }
         }
 
         // Initialize app
