@@ -407,6 +407,152 @@
             color: var(--bg-primary);
         }
 
+        /* Input Mode Toggle (Upload/Camera) */
+        .input-mode-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding: 4px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .mode-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .mode-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+        }
+
+        .mode-btn.active {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* Camera Zone */
+        .camera-zone {
+            position: relative;
+            border: 2px solid var(--border-subtle);
+            border-radius: 24px;
+            overflow: hidden;
+            background: var(--bg-secondary);
+            aspect-ratio: 3/4;
+            max-height: 450px;
+        }
+
+        .camera-zone video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+        }
+
+        .camera-capture-btn {
+            width: 64px;
+            height: 64px;
+            border: none;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .camera-capture-btn svg {
+            width: 32px;
+            height: 32px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        .camera-capture-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .camera-capture-btn:active {
+            transform: scale(0.95);
+        }
+
+        .camera-switch-btn,
+        .camera-close-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .camera-switch-btn svg,
+        .camera-close-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+        }
+
+        .camera-switch-btn:hover,
+        .camera-close-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .camera-hint {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
         /* Preview container */
         .upload-preview {
             display: none;
@@ -1229,7 +1375,7 @@
 
         .gauge-fill {
             fill: none;
-            stroke: var(--accent-primary);
+            stroke: url(#gauge-gradient);
             stroke-width: 8;
             stroke-linecap: round;
             stroke-dasharray: 251;
@@ -1238,11 +1384,24 @@
         }
 
         .gauge-fill.amber {
-            stroke: var(--accent-warning);
+            stroke: url(#gauge-gradient);
         }
 
         .gauge-fill.purple {
-            stroke: var(--accent-warm);
+            stroke: url(#gauge-gradient);
+        }
+
+        /* Score-based gradient colors */
+        .gauge-fill.score-low {
+            stroke: url(#gauge-gradient-low);
+        }
+
+        .gauge-fill.score-medium {
+            stroke: url(#gauge-gradient-medium);
+        }
+
+        .gauge-fill.score-high {
+            stroke: url(#gauge-gradient-high);
         }
 
         .gauge-value {
@@ -3192,15 +3351,15 @@
         }
 
         .macro-chart-segment.protein {
-            stroke: var(--accent-primary);
+            stroke: url(#macro-protein-gradient);
         }
 
         .macro-chart-segment.carbs {
-            stroke: var(--accent-warning);
+            stroke: url(#macro-carbs-gradient);
         }
 
         .macro-chart-segment.fats {
-            stroke: var(--accent-warm);
+            stroke: url(#macro-fats-gradient);
         }
 
         .macro-chart-center {
@@ -3603,6 +3762,201 @@
         .food-upload-hint {
             font-size: 0.8rem;
             color: var(--text-tertiary);
+        }
+
+        /* Food Camera Zone */
+        .food-camera-zone {
+            aspect-ratio: 4/3;
+            max-height: 300px;
+            margin-bottom: 16px;
+        }
+
+        /* Food Preview */
+        .food-preview {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .food-preview-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 16px;
+        }
+
+        .food-preview .remove-preview {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+        }
+
+        /* Food Analysis Results */
+        .food-results {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .food-results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .food-results-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .food-confidence {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(125, 154, 120, 0.2);
+            color: var(--accent-success);
+        }
+
+        .food-confidence.medium {
+            background: rgba(196, 149, 106, 0.2);
+            color: var(--accent-warning);
+        }
+
+        .food-confidence.low {
+            background: rgba(184, 115, 81, 0.2);
+            color: var(--accent-warm);
+        }
+
+        .detected-foods {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .detected-food-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+        }
+
+        .food-item-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-cyan-glow), transparent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .food-item-info {
+            flex: 1;
+        }
+
+        .food-item-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .food-item-portion {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        .food-item-calories {
+            text-align: right;
+        }
+
+        .food-item-cal-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--accent-primary);
+        }
+
+        .food-item-cal-label {
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+        }
+
+        .food-totals {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .food-total-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .food-total-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .food-total-value {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--accent-primary);
+        }
+
+        .food-total-macros {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .food-macro-total {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .food-macro-total span:first-child {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .food-macro-total span:last-child {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        .food-macro-total.protein span:first-child {
+            color: var(--accent-primary);
+        }
+
+        .food-macro-total.carbs span:first-child {
+            color: var(--accent-warning);
+        }
+
+        .food-macro-total.fats span:first-child {
+            color: var(--accent-warm);
+        }
+
+        /* Spinner animation for loading states */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         /* Nutrition actions */
