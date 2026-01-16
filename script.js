@@ -7,6 +7,7 @@
             imageData: null,
             analysisResult: null,
             landmarks: null,
+            humanDetected: false,  // Track if a human body was detected
             // BMI data
             height: null,  // in cm
             weight: null,  // in kg
@@ -312,15 +313,41 @@
 
         // Handle pose detection results
         function onPoseResults(results) {
-            if (results.poseLandmarks) {
-                state.landmarks = results.poseLandmarks;
-                state.segmentationMask = results.segmentationMask || null;
-                state.analysisResult = calculateBodyMetrics(results.poseLandmarks, results.segmentationMask, results.image);
-                console.log('Pose detected! Landmarks:', results.poseLandmarks.length);
-                console.log('Segmentation available:', !!results.segmentationMask);
+            if (results.poseLandmarks && results.poseLandmarks.length >= 25) {
+                // Validate key body landmarks are visible with reasonable confidence
+                const keyLandmarks = [
+                    results.poseLandmarks[11], // left shoulder
+                    results.poseLandmarks[12], // right shoulder
+                    results.poseLandmarks[23], // left hip
+                    results.poseLandmarks[24], // right hip
+                ];
+
+                // Check if key landmarks have sufficient visibility
+                const minVisibility = 0.3;
+                const validLandmarks = keyLandmarks.filter(lm =>
+                    lm && lm.visibility && lm.visibility > minVisibility
+                );
+
+                if (validLandmarks.length >= 3) {
+                    // Valid human body detected
+                    state.humanDetected = true;
+                    state.landmarks = results.poseLandmarks;
+                    state.segmentationMask = results.segmentationMask || null;
+                    state.analysisResult = calculateBodyMetrics(results.poseLandmarks, results.segmentationMask, results.image);
+                    console.log('Human body detected! Valid landmarks:', validLandmarks.length);
+                } else {
+                    // Landmarks detected but not a valid body pose
+                    console.log('Partial detection - insufficient body visibility');
+                    state.humanDetected = false;
+                    state.landmarks = null;
+                    state.analysisResult = null;
+                }
             } else {
-                console.log('No pose detected, using estimates');
-                state.analysisResult = getEstimatedResult();
+                // No pose detected at all
+                console.log('No human body detected in image');
+                state.humanDetected = false;
+                state.landmarks = null;
+                state.analysisResult = null;
             }
         }
 
@@ -993,9 +1020,10 @@
 
             } catch (error) {
                 console.error('MediaPipe analysis failed:', error);
-                // Use estimated data as fallback
-                state.analysisResult = getEstimatedResult();
-                console.log('Using estimated data');
+                // Mark as no human detected - error will be shown by runAnalysisSteps
+                state.humanDetected = false;
+                state.analysisResult = null;
+                console.log('Analysis failed - no valid data');
             }
         }
 
@@ -1014,15 +1042,45 @@
                     currentStep++;
                     setTimeout(advanceStep, stepDuration);
                 } else {
-                    // Analysis complete - populate results and show
+                    // Analysis complete - check if human was detected
                     setTimeout(() => {
-                        populateResults();
-                        goToScreen(3);
+                        if (!state.humanDetected || !state.analysisResult) {
+                            // No human body detected - show error and return to upload
+                            showNoHumanDetectedError();
+                        } else {
+                            // Valid analysis - show results
+                            populateResults();
+                            goToScreen(3);
+                        }
                     }, 500);
                 }
             }
 
             advanceStep();
+        }
+
+        // Show error when no human body is detected
+        function showNoHumanDetectedError() {
+            const errorMessage = `No Human Body Detected
+
+The AI could not detect a human body in your photo.
+
+Please ensure:
+• Your FULL BODY is visible (head to feet)
+• You are facing the camera
+• Good lighting with minimal shadows
+• Plain background if possible
+• Photo is not blurry
+
+Please try again with a different photo.`;
+
+            alert(errorMessage);
+
+            // Reset state and return to upload screen
+            state.humanDetected = false;
+            state.analysisResult = null;
+            state.landmarks = null;
+            goToScreen(1);
         }
 
         // Populate results from AI analysis
