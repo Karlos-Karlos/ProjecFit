@@ -26,10 +26,10 @@
             --accent-warning: #c4956a;
             --accent-danger: #a65d5d;
 
-            /* Text - warm off-whites */
-            --text-primary: #f5f2ed;
-            --text-secondary: rgba(245, 242, 237, 0.65);
-            --text-tertiary: rgba(245, 242, 237, 0.4);
+            /* Text - clean white tones */
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-tertiary: rgba(255, 255, 255, 0.5);
 
             /* Borders & Surfaces */
             --border-subtle: rgba(201, 169, 98, 0.12);
@@ -146,10 +146,7 @@
             font-weight: 800;
             font-size: 1.5rem;
             letter-spacing: -0.02em;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-primary);
         }
 
         .nav-steps {
@@ -343,7 +340,7 @@
             transform: translate(-50%, -50%);
             width: 36px;
             height: 36px;
-            stroke: var(--accent-primary);
+            stroke: var(--text-secondary);
         }
 
         .upload-title {
@@ -581,7 +578,7 @@
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 500;
-            color: var(--accent-primary);
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 6px;
@@ -591,7 +588,7 @@
             content: '';
             width: 8px;
             height: 8px;
-            background: var(--accent-primary);
+            background: var(--text-primary);
             border-radius: 50%;
             animation: badgePulse 1.5s ease infinite;
         }
@@ -625,7 +622,7 @@
         .remove-preview svg {
             width: 18px;
             height: 18px;
-            stroke: var(--accent-danger);
+            stroke: var(--text-secondary);
             transition: stroke 0.3s;
         }
 
@@ -665,7 +662,7 @@
         .guide-icon svg {
             width: 20px;
             height: 20px;
-            stroke: var(--accent-primary);
+            stroke: var(--text-primary);
         }
 
         .guide-items {
@@ -732,8 +729,8 @@
             font-size: 0.6rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: var(--accent-primary);
-            background: rgba(201, 169, 98, 0.15);
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.1);
             padding: 3px 6px;
             border-radius: 4px;
             font-weight: 600;
@@ -753,8 +750,8 @@
             font-size: 0.6rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: var(--accent-warm);
-            background: rgba(184, 115, 81, 0.15);
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.1);
             padding: 3px 6px;
             border-radius: 4px;
             font-weight: 600;
@@ -810,8 +807,8 @@
 
         .input-unit {
             padding: 12px 14px;
-            background: rgba(201, 169, 98, 0.1);
-            color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
             font-size: 0.8rem;
             font-weight: 600;
             border-left: 1px solid var(--border-subtle);
@@ -829,7 +826,7 @@
         .bmi-value {
             font-size: 2rem;
             font-weight: 700;
-            color: var(--accent-primary);
+            color: var(--text-primary);
             line-height: 1;
         }
 
@@ -839,11 +836,11 @@
             margin-top: 6px;
         }
 
-        .bmi-category.athletic { color: var(--accent-success); }
-        .bmi-category.fit { color: var(--accent-primary); }
+        .bmi-category.athletic { color: var(--text-primary); }
+        .bmi-category.fit { color: var(--text-primary); }
         .bmi-category.average { color: var(--text-primary); }
-        .bmi-category.overweight { color: var(--accent-warning); }
-        .bmi-category.obese { color: var(--accent-danger); }
+        .bmi-category.overweight { color: var(--text-secondary); }
+        .bmi-category.obese { color: var(--text-secondary); }
 
         .input-group {
             margin-bottom: 16px;
@@ -879,6 +876,70 @@
             box-shadow: 0 0 0 3px var(--accent-cyan-glow);
         }
 
+        /* Goal Selector */
+        .goal-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .goal-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 12px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-subtle);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s var(--transition-smooth);
+            text-align: center;
+        }
+
+        .goal-option:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--text-tertiary);
+        }
+
+        .goal-option.selected {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--text-primary);
+        }
+
+        .goal-option svg {
+            width: 28px;
+            height: 28px;
+            stroke: var(--text-secondary);
+            transition: stroke 0.3s;
+        }
+
+        .goal-option:hover svg,
+        .goal-option.selected svg {
+            stroke: var(--text-primary);
+        }
+
+        .goal-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .goal-desc {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        .goal-option.selected .goal-title {
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 480px) {
+            .goal-selector {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Disclaimer */
         .disclaimer {
             background: rgba(196, 149, 106, 0.08);
@@ -899,7 +960,7 @@
         .disclaimer-icon svg {
             width: 100%;
             height: 100%;
-            stroke: var(--accent-warning);
+            stroke: var(--text-secondary);
         }
 
         .disclaimer p {
@@ -909,7 +970,7 @@
         }
 
         .disclaimer strong {
-            color: var(--accent-warning);
+            color: var(--text-primary);
         }
 
         /* Action button */
@@ -1105,7 +1166,7 @@
         }
 
         .progress-step.active .step-indicator svg {
-            stroke: var(--accent-primary);
+            stroke: var(--text-primary);
             animation: iconPulse 1s ease-in-out infinite;
         }
 
@@ -1197,8 +1258,8 @@
         }
 
         .silhouette-body {
-            fill: rgba(201, 169, 98, 0.1);
-            stroke: var(--accent-primary);
+            fill: rgba(255, 255, 255, 0.05);
+            stroke: var(--text-secondary);
             stroke-width: 1.5;
         }
 
@@ -1295,7 +1356,7 @@
         .confidence-text {
             font-size: 0.8rem;
             font-weight: 500;
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .confidence-description {
@@ -1345,7 +1406,7 @@
             font-weight: 700;
             font-weight: 700;
             font-size: 1.5rem;
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         /* Circular gauge */
@@ -1465,10 +1526,7 @@
             font-weight: 700;
             font-size: 1.5rem;
             margin-bottom: 4px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-warm));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-primary);
         }
 
         .overview-label {
@@ -1519,7 +1577,7 @@
         .btn-secondary svg {
             width: 18px;
             height: 18px;
-            stroke: var(--accent-primary);
+            stroke: var(--text-primary);
         }
 
         /* ========== SCREEN 4: DETAILED BREAKDOWN ========== */
@@ -1591,7 +1649,7 @@
         }
 
         .explainability-toggle.active .toggle-label {
-            color: var(--accent-warm);
+            color: var(--text-primary);
         }
 
         /* Breakdown sections */
@@ -1648,23 +1706,23 @@
         .section-icon svg {
             width: 22px;
             height: 22px;
-            stroke: var(--accent-primary);
+            stroke: var(--text-primary);
         }
 
         .section-icon.amber {
-            background: linear-gradient(135deg, rgba(196, 149, 106, 0.2), transparent);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .section-icon.amber svg {
-            stroke: var(--accent-warning);
+            stroke: var(--text-primary);
         }
 
         .section-icon.purple {
-            background: linear-gradient(135deg, rgba(184, 115, 81, 0.2), transparent);
+            background: rgba(255, 255, 255, 0.06);
         }
 
         .section-icon.purple svg {
-            stroke: var(--accent-warm);
+            stroke: var(--text-primary);
         }
 
         .section-title {
@@ -1691,7 +1749,7 @@
             font-weight: 700;
             font-weight: 700;
             font-size: 1.25rem;
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .section-chevron {
@@ -1760,13 +1818,13 @@
         .explainability-header svg {
             width: 16px;
             height: 16px;
-            stroke: var(--accent-warm);
+            stroke: var(--text-secondary);
         }
 
         .explainability-header span {
             font-size: 0.8rem;
             font-weight: 600;
-            color: var(--accent-warm);
+            color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -1806,15 +1864,15 @@
         }
 
         .detail-value.good {
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .detail-value.warning {
-            color: var(--accent-warning);
+            color: var(--text-secondary);
         }
 
         .detail-value.alert {
-            color: var(--accent-danger);
+            color: var(--text-secondary);
         }
 
         /* Posture visualization */
@@ -1884,7 +1942,7 @@
             top: 50%;
             transform: translateY(-50%);
             font-size: 0.75rem;
-            color: var(--accent-warning);
+            color: var(--text-secondary);
             white-space: nowrap;
         }
 
@@ -1939,7 +1997,7 @@
         .recommendations h4 svg {
             width: 18px;
             height: 18px;
-            stroke: var(--accent-primary);
+            stroke: var(--text-primary);
         }
 
         .recommendation-list {
@@ -1960,7 +2018,7 @@
         .recommendation-item svg {
             width: 16px;
             height: 16px;
-            stroke: var(--accent-primary);
+            stroke: var(--text-primary);
             flex-shrink: 0;
         }
 
@@ -1985,7 +2043,7 @@
         }
 
         .back-button:hover {
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .back-button svg {
@@ -2127,15 +2185,15 @@
         }
 
         .avatar-body .body-fill {
-            fill: rgba(201, 169, 98, 0.15);
-            stroke: var(--accent-primary);
+            fill: rgba(255, 255, 255, 0.08);
+            stroke: var(--text-secondary);
             stroke-width: 1.5;
             transition: all 0.8s var(--transition-smooth);
         }
 
         .avatar-frame.future .avatar-body .body-fill {
-            fill: rgba(184, 115, 81, 0.15);
-            stroke: var(--accent-warm);
+            fill: rgba(255, 255, 255, 0.1);
+            stroke: var(--text-primary);
         }
 
         .avatar-stats {
@@ -2163,11 +2221,11 @@
         }
 
         .avatar-stat-value.improved {
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .avatar-stat-value.future {
-            color: var(--accent-warm);
+            color: var(--text-primary);
         }
 
         /* Comparison arrow */
@@ -2244,7 +2302,7 @@
             font-weight: 700;
             font-weight: 700;
             font-size: 1.5rem;
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .timeline-slider-container {
@@ -2298,7 +2356,7 @@
         }
 
         .timeline-marker.active {
-            color: var(--accent-primary);
+            color: var(--text-primary);
             font-weight: 500;
         }
 
@@ -2351,31 +2409,31 @@
         .scenario-icon svg {
             width: 24px;
             height: 24px;
-            stroke: var(--accent-primary);
+            stroke: var(--text-primary);
         }
 
         .scenario-icon.amber {
-            background: linear-gradient(135deg, rgba(196, 149, 106, 0.2), transparent);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .scenario-icon.amber svg {
-            stroke: var(--accent-warning);
+            stroke: var(--text-primary);
         }
 
         .scenario-icon.coral {
-            background: linear-gradient(135deg, rgba(166, 93, 93, 0.2), transparent);
+            background: rgba(255, 255, 255, 0.06);
         }
 
         .scenario-icon.coral svg {
-            stroke: var(--accent-danger);
+            stroke: var(--text-primary);
         }
 
         .scenario-icon.purple {
-            background: linear-gradient(135deg, rgba(184, 115, 81, 0.2), transparent);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .scenario-icon.purple svg {
-            stroke: var(--accent-warm);
+            stroke: var(--text-primary);
         }
 
         .scenario-title {
@@ -2419,15 +2477,15 @@
         }
 
         .detail-change.positive {
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .detail-change.negative {
-            color: var(--accent-danger);
+            color: var(--text-secondary);
         }
 
         .detail-change.neutral {
-            color: var(--accent-warning);
+            color: var(--text-secondary);
         }
 
         /* Impact summary */
@@ -2479,10 +2537,7 @@
             font-weight: 700;
             font-size: 2rem;
             margin-bottom: 4px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-warm));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-primary);
         }
 
         .impact-label {
@@ -2499,13 +2554,13 @@
         }
 
         .impact-change.positive {
-            background: rgba(201, 169, 98, 0.1);
-            color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
         }
 
         .impact-change.negative {
-            background: rgba(166, 93, 93, 0.1);
-            color: var(--accent-danger);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
         }
 
         /* Simulator actions */
@@ -2550,7 +2605,7 @@
         }
 
         .age-number.projected {
-            color: var(--accent-warm);
+            color: var(--text-primary);
         }
 
         .age-label {
@@ -2586,7 +2641,7 @@
         }
 
         .age-benefit strong {
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         /* ========== SCREEN 6: WORKOUT GUIDANCE ========== */
@@ -2683,7 +2738,7 @@
             font-weight: 600;
             font-size: 1rem;
             margin-bottom: 4px;
-            color: var(--accent-warning);
+            color: var(--text-primary);
         }
 
         .weak-areas-text p {
@@ -2699,11 +2754,11 @@
 
         .weak-tag {
             padding: 6px 14px;
-            background: rgba(196, 149, 106, 0.15);
-            border: 1px solid rgba(196, 149, 106, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 20px;
             font-size: 0.8rem;
-            color: var(--accent-warning);
+            color: var(--text-primary);
             font-weight: 500;
         }
 
@@ -2780,34 +2835,34 @@
         }
 
         .exercise-tag.home {
-            background: rgba(201, 169, 98, 0.1);
-            color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
         }
 
         .exercise-tag.gym {
-            background: rgba(184, 115, 81, 0.1);
-            color: var(--accent-warm);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
         }
 
         .exercise-tag.beginner {
-            background: rgba(201, 169, 98, 0.1);
-            color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
         }
 
         .exercise-tag.intermediate {
-            background: rgba(196, 149, 106, 0.1);
-            color: var(--accent-warning);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
         }
 
         .exercise-tag.advanced {
-            background: rgba(166, 93, 93, 0.1);
-            color: var(--accent-danger);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
         }
 
         .exercise-tag.weak-focus {
-            background: rgba(196, 149, 106, 0.15);
-            color: var(--accent-warning);
-            border: 1px solid rgba(196, 149, 106, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .exercise-duration {
@@ -2850,7 +2905,7 @@
 
         .avatar-figure .figure-body {
             fill: none;
-            stroke: var(--accent-primary);
+            stroke: var(--text-primary);
             stroke-width: 2;
             stroke-linecap: round;
             stroke-linejoin: round;
@@ -2954,7 +3009,7 @@
             font-weight: 700;
             font-weight: 700;
             font-size: 1.1rem;
-            color: var(--accent-primary);
+            color: var(--text-primary);
             margin-bottom: 2px;
         }
 
@@ -3016,8 +3071,8 @@
         }
 
         .btn-exercise.secondary:hover {
-            border-color: var(--accent-primary);
-            color: var(--accent-primary);
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
         }
 
         .btn-exercise.secondary svg {
@@ -3059,10 +3114,7 @@
             font-weight: 700;
             font-weight: 700;
             font-size: 1.5rem;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-warm));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-primary);
         }
 
         .routine-stat-label {
@@ -3121,7 +3173,7 @@
             font-weight: 700;
             font-weight: 600;
             font-size: 0.9rem;
-            color: var(--accent-primary);
+            color: var(--text-primary);
             flex-shrink: 0;
         }
 
@@ -3150,7 +3202,7 @@
         .routine-item-duration svg {
             width: 14px;
             height: 14px;
-            stroke: var(--accent-primary);
+            stroke: var(--text-secondary);
         }
 
         /* Workout actions */
@@ -3212,10 +3264,7 @@
             font-weight: 700;
             font-weight: 700;
             font-size: 2.5rem;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-warm));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-primary);
             line-height: 1;
         }
 
@@ -3266,9 +3315,9 @@
             height: 24px;
         }
 
-        .macro-icon.protein svg { stroke: var(--accent-primary); }
-        .macro-icon.carbs svg { stroke: var(--accent-warning); }
-        .macro-icon.fats svg { stroke: var(--accent-warm); }
+        .macro-icon.protein svg { stroke: var(--text-primary); }
+        .macro-icon.carbs svg { stroke: var(--text-primary); }
+        .macro-icon.fats svg { stroke: var(--text-primary); }
 
         .macro-info {
             flex: 1;
@@ -3424,7 +3473,7 @@
             font-weight: 600;
             font-size: 1.1rem;
             margin-bottom: 4px;
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .protein-banner-text p {
@@ -3444,7 +3493,7 @@
             font-weight: 700;
             font-weight: 700;
             font-size: 1.5rem;
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .protein-target-label {
@@ -3485,7 +3534,7 @@
 
         .meal-time {
             font-size: 0.75rem;
-            color: var(--accent-primary);
+            color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.1em;
             margin-bottom: 4px;
@@ -3507,7 +3556,7 @@
             font-weight: 700;
             font-weight: 700;
             font-size: 1.25rem;
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .meal-cal-label {
@@ -3547,10 +3596,10 @@
             height: 24px;
         }
 
-        .portion-icon.protein-item svg { stroke: var(--accent-primary); }
-        .portion-icon.carb-item svg { stroke: var(--accent-warning); }
-        .portion-icon.veggie-item svg { stroke: #7d9a78; }
-        .portion-icon.fat-item svg { stroke: var(--accent-warm); }
+        .portion-icon.protein-item svg { stroke: var(--text-primary); }
+        .portion-icon.carb-item svg { stroke: var(--text-primary); }
+        .portion-icon.veggie-item svg { stroke: var(--text-primary); }
+        .portion-icon.fat-item svg { stroke: var(--text-primary); }
 
         .portion-size {
             position: absolute;
@@ -3566,7 +3615,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .portion-label {
@@ -3602,9 +3651,9 @@
             font-size: 1rem;
         }
 
-        .meal-macro-value.protein { color: var(--accent-primary); }
-        .meal-macro-value.carbs { color: var(--accent-warning); }
-        .meal-macro-value.fats { color: var(--accent-warm); }
+        .meal-macro-value.protein { color: var(--text-primary); }
+        .meal-macro-value.carbs { color: var(--text-primary); }
+        .meal-macro-value.fats { color: var(--text-primary); }
 
         .meal-macro-label {
             font-size: 0.65rem;
@@ -3688,19 +3737,19 @@
         }
 
         .insight-card.protein-insight .insight-icon {
-            background: linear-gradient(135deg, var(--accent-cyan-glow), transparent);
+            background: rgba(255, 255, 255, 0.1);
         }
-        .insight-card.protein-insight .insight-icon svg { stroke: var(--accent-primary); }
+        .insight-card.protein-insight .insight-icon svg { stroke: var(--text-primary); }
 
         .insight-card.timing-insight .insight-icon {
-            background: linear-gradient(135deg, rgba(196, 149, 106, 0.2), transparent);
+            background: rgba(255, 255, 255, 0.08);
         }
-        .insight-card.timing-insight .insight-icon svg { stroke: var(--accent-warning); }
+        .insight-card.timing-insight .insight-icon svg { stroke: var(--text-primary); }
 
         .insight-card.hydration-insight .insight-icon {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), transparent);
+            background: rgba(255, 255, 255, 0.06);
         }
-        .insight-card.hydration-insight .insight-icon svg { stroke: #6b8a9a; }
+        .insight-card.hydration-insight .insight-icon svg { stroke: var(--text-primary); }
 
         .insight-title {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -3750,7 +3799,7 @@
         .food-upload-icon svg {
             width: 28px;
             height: 28px;
-            stroke: var(--accent-primary);
+            stroke: var(--text-secondary);
         }
 
         .food-upload-text {
@@ -3792,6 +3841,115 @@
             right: 12px;
         }
 
+        /* Food Confirmation UI */
+        .food-confirmation {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .detected-food-suggestion {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 2px solid var(--border-subtle);
+        }
+
+        .suggestion-icon {
+            font-size: 3rem;
+            line-height: 1;
+        }
+
+        .suggestion-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .food-search-box {
+            margin-top: 12px;
+            position: relative;
+        }
+
+        .food-search-input-wrapper {
+            position: relative;
+        }
+
+        .food-search-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .food-search-input:focus {
+            outline: none;
+            border-color: var(--text-secondary);
+        }
+
+        .food-search-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .food-search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 4px;
+            max-height: 280px;
+            overflow-y: auto;
+            border-radius: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            z-index: 100;
+        }
+
+        .food-search-result-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-subtle);
+            transition: background 0.15s ease;
+        }
+
+        .food-search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .food-search-result-item:hover,
+        .food-search-result-item.highlighted {
+            background: var(--bg-tertiary);
+        }
+
+        .food-search-result-item.highlighted {
+            background: var(--bg-secondary);
+        }
+
+        .food-search-result-name {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .food-search-result-info {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .food-search-loading {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
         /* Food Analysis Results */
         .food-results {
             margin-top: 20px;
@@ -3815,18 +3973,18 @@
             font-size: 0.75rem;
             padding: 4px 10px;
             border-radius: 20px;
-            background: rgba(125, 154, 120, 0.2);
-            color: var(--accent-success);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
         }
 
         .food-confidence.medium {
-            background: rgba(196, 149, 106, 0.2);
-            color: var(--accent-warning);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
         }
 
         .food-confidence.low {
-            background: rgba(184, 115, 81, 0.2);
-            color: var(--accent-warm);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
         }
 
         .detected-foods {
@@ -3877,7 +4035,7 @@
         .food-item-cal-value {
             font-weight: 700;
             font-size: 1.1rem;
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .food-item-cal-label {
@@ -3910,7 +4068,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             font-weight: 700;
             font-size: 1.5rem;
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .food-total-macros {
@@ -3936,15 +4094,15 @@
         }
 
         .food-macro-total.protein span:first-child {
-            color: var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .food-macro-total.carbs span:first-child {
-            color: var(--accent-warning);
+            color: var(--text-primary);
         }
 
         .food-macro-total.fats span:first-child {
-            color: var(--accent-warm);
+            color: var(--text-primary);
         }
 
         /* Spinner animation for loading states */
