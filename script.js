@@ -14,7 +14,9 @@
             bmi: null,
             bmiCategory: null,
             // BodyPix data
-            bodyPixResult: null
+            bodyPixResult: null,
+            // Fitness goal
+            fitnessGoal: null  // 'lose-weight', 'build-muscle', 'maintain', 'recomp'
         };
 
         // AI Models
@@ -113,17 +115,87 @@
             const analyzeBtn = document.getElementById('analyze-btn');
             const hasImage = state.hasImage;
             const hasBMI = state.bmi !== null;
+            const hasGoal = state.fitnessGoal !== null;
 
             if (analyzeBtn) {
-                analyzeBtn.disabled = !(hasImage && hasBMI);
+                analyzeBtn.disabled = !(hasImage && hasBMI && hasGoal);
                 if (!hasImage) {
                     analyzeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Upload Photo First';
                 } else if (!hasBMI) {
                     analyzeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Enter Height & Weight';
+                } else if (!hasGoal) {
+                    analyzeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Select Fitness Goal';
                 } else {
                     analyzeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Analyze Photo';
                 }
             }
+        }
+
+        // ========== GOAL SELECTOR ==========
+        function setupGoalSelector() {
+            const goalOptions = document.querySelectorAll('.goal-option');
+            goalOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    // Remove selected from all
+                    goalOptions.forEach(opt => opt.classList.remove('selected'));
+                    // Add selected to clicked
+                    option.classList.add('selected');
+                    // Update state
+                    state.fitnessGoal = option.dataset.goal;
+                    updateAnalyzeButton();
+                });
+            });
+        }
+
+        // Get goal-specific configurations
+        function getGoalConfig(goal) {
+            const configs = {
+                'lose-weight': {
+                    name: 'Weight Loss',
+                    calorieAdjustment: -500, // Caloric deficit
+                    proteinMultiplier: 1.0, // g per lb bodyweight
+                    carbPercentage: 0.35,
+                    fatPercentage: 0.30,
+                    workoutFocus: ['cardio', 'hiit', 'full-body'],
+                    workoutFrequency: '4-5 days/week',
+                    primaryMessage: 'Focus on caloric deficit while maintaining muscle mass',
+                    exercises: ['Jumping Jacks', 'Burpees', 'Mountain Climbers', 'High Knees', 'Bodyweight Squats', 'Lunges']
+                },
+                'build-muscle': {
+                    name: 'Muscle Building',
+                    calorieAdjustment: 300, // Caloric surplus
+                    proteinMultiplier: 1.2, // Higher protein
+                    carbPercentage: 0.45,
+                    fatPercentage: 0.25,
+                    workoutFocus: ['strength', 'hypertrophy', 'compound'],
+                    workoutFrequency: '4-5 days/week',
+                    primaryMessage: 'Focus on progressive overload and protein intake',
+                    exercises: ['Push-ups', 'Pull-ups', 'Squats', 'Deadlifts', 'Bench Press', 'Rows']
+                },
+                'maintain': {
+                    name: 'Maintenance',
+                    calorieAdjustment: 0, // Maintenance calories
+                    proteinMultiplier: 0.8,
+                    carbPercentage: 0.40,
+                    fatPercentage: 0.30,
+                    workoutFocus: ['balanced', 'flexibility', 'endurance'],
+                    workoutFrequency: '3-4 days/week',
+                    primaryMessage: 'Maintain current physique with balanced nutrition',
+                    exercises: ['Walking', 'Yoga', 'Swimming', 'Cycling', 'Light Weights', 'Stretching']
+                },
+                'recomp': {
+                    name: 'Body Recomposition',
+                    calorieAdjustment: 0, // Slight deficit or maintenance
+                    proteinMultiplier: 1.1, // High protein crucial
+                    carbPercentage: 0.35,
+                    fatPercentage: 0.30,
+                    workoutFocus: ['strength', 'hiit', 'compound'],
+                    workoutFrequency: '5-6 days/week',
+                    primaryMessage: 'Build muscle while losing fat - prioritize protein',
+                    exercises: ['Compound Lifts', 'HIIT', 'Resistance Training', 'Circuit Training', 'Core Work', 'Plyometrics']
+                }
+            };
+            return configs[goal] || configs['maintain'];
         }
 
         // ========== BODYPIX SEGMENTATION ==========
@@ -708,6 +780,9 @@
             if (heightInput) heightInput.addEventListener('input', updateBMIPreview);
             if (weightInput) weightInput.addEventListener('input', updateBMIPreview);
 
+            // Setup goal selector
+            setupGoalSelector();
+
             // Initial button state
             updateAnalyzeButton();
 
@@ -792,6 +867,8 @@
             // Mode toggle buttons
             uploadModeBtn.addEventListener('click', () => {
                 setInputMode('upload');
+                // Also trigger file picker when clicking upload button
+                if (fileInput) fileInput.click();
             });
 
             cameraModeBtn.addEventListener('click', () => {
@@ -1032,6 +1109,12 @@
             const stepDuration = 1500; // Longer to allow API time
 
             function advanceStep() {
+                // Only continue if still on analysis screen (screen 2)
+                if (state.currentScreen !== 2) {
+                    console.log('Analysis cancelled - user left analysis screen');
+                    return;
+                }
+
                 if (currentStep > 0) {
                     document.getElementById(analysisSteps[currentStep - 1]).classList.remove('active');
                     document.getElementById(analysisSteps[currentStep - 1]).classList.add('completed');
@@ -1044,6 +1127,12 @@
                 } else {
                     // Analysis complete - check if human was detected
                     setTimeout(() => {
+                        // Only proceed if still on analysis screen
+                        if (state.currentScreen !== 2) {
+                            console.log('Analysis result ignored - user left analysis screen');
+                            return;
+                        }
+
                         if (!state.humanDetected || !state.analysisResult) {
                             // No human body detected - show error and return to upload
                             showNoHumanDetectedError();
@@ -1061,6 +1150,12 @@
 
         // Show error when no human body is detected
         function showNoHumanDetectedError() {
+            // Only show error if still on analysis-related screens (1, 2, or 3)
+            if (state.currentScreen > 3) {
+                console.log('Human detection error ignored - user on different screen');
+                return;
+            }
+
             const errorMessage = `No Human Body Detected
 
 The AI could not detect a human body in your photo.
@@ -1246,6 +1341,9 @@ Please try again with a different photo.`;
 
             // Animate gauges with new values
             animateGauges();
+
+            // Populate goal-based nutrition targets
+            populateGoalBasedNutrition();
         }
 
         // Update explainability text based on analysis
@@ -1301,6 +1399,73 @@ Please try again with a different photo.`;
                     }
                 });
             });
+        }
+
+        // Calculate and populate goal-based nutrition
+        function populateGoalBasedNutrition() {
+            const goal = state.fitnessGoal;
+            const weight = state.weight; // in kg
+            const activityLevel = document.getElementById('activity-level')?.value || 'moderate';
+
+            if (!goal || !weight) return;
+
+            const config = getGoalConfig(goal);
+            const weightLbs = weight * 2.205; // Convert to lbs for protein calc
+
+            // Calculate base metabolic rate (simplified)
+            const activityMultipliers = {
+                'sedentary': 1.2,
+                'light': 1.375,
+                'moderate': 1.55,
+                'very': 1.725,
+                'athlete': 1.9
+            };
+            const multiplier = activityMultipliers[activityLevel] || 1.55;
+
+            // Base calories (simplified estimation based on weight)
+            const baseCalories = Math.round(weight * 24 * multiplier);
+            const targetCalories = Math.round(baseCalories + config.calorieAdjustment);
+
+            // Calculate macros
+            const proteinGrams = Math.round(weightLbs * config.proteinMultiplier);
+            const proteinCalories = proteinGrams * 4;
+            const remainingCalories = targetCalories - proteinCalories;
+            const carbCalories = Math.round(remainingCalories * (config.carbPercentage / (config.carbPercentage + config.fatPercentage)));
+            const fatCalories = remainingCalories - carbCalories;
+            const carbGrams = Math.round(carbCalories / 4);
+            const fatGrams = Math.round(fatCalories / 9);
+
+            // Update UI elements
+            const calorieDisplay = document.getElementById('calorie-target-display');
+            const proteinTarget = document.getElementById('protein-target-display');
+            const proteinMacro = document.getElementById('protein-macro-display');
+            const carbsMacro = document.getElementById('carbs-macro-display');
+            const fatsMacro = document.getElementById('fats-macro-display');
+            const goalTitle = document.getElementById('nutrition-goal-title');
+            const goalMessage = document.getElementById('nutrition-goal-message');
+
+            if (calorieDisplay) calorieDisplay.textContent = targetCalories.toLocaleString();
+            if (proteinTarget) proteinTarget.textContent = `${proteinGrams}g`;
+            if (proteinMacro) proteinMacro.innerHTML = `<span>${proteinGrams}g</span> / ${proteinGrams}g target`;
+            if (carbsMacro) carbsMacro.innerHTML = `<span>${carbGrams}g</span> / ${carbGrams}g target`;
+            if (fatsMacro) fatsMacro.innerHTML = `<span>${fatGrams}g</span> / ${fatGrams}g target`;
+
+            // Update goal-specific messaging
+            const goalTitles = {
+                'lose-weight': 'Caloric Deficit for Fat Loss',
+                'build-muscle': 'Caloric Surplus for Muscle Growth',
+                'maintain': 'Balanced Nutrition for Maintenance',
+                'recomp': 'High Protein for Body Recomposition'
+            };
+            const goalMessages = {
+                'lose-weight': `Based on your ${config.name} goal, we recommend a ${Math.abs(config.calorieAdjustment)} calorie deficit while maintaining high protein to preserve muscle mass.`,
+                'build-muscle': `For ${config.name}, you need a ${config.calorieAdjustment} calorie surplus with emphasis on protein (${config.proteinMultiplier}g per lb) for optimal muscle growth.`,
+                'maintain': `For weight maintenance, we've calculated your daily needs to keep your current physique while supporting overall health.`,
+                'recomp': `Body recomposition requires precise nutrition - high protein to build muscle while eating at maintenance to gradually lose fat.`
+            };
+
+            if (goalTitle) goalTitle.textContent = goalTitles[goal] || 'Your Nutrition Plan';
+            if (goalMessage) goalMessage.textContent = goalMessages[goal] || config.primaryMessage;
         }
 
         // Mock data fallback
@@ -1612,107 +1777,6 @@ Please try again with a different photo.`;
             }
         }
 
-        // Food nutrition database - maps image classifications to nutrition data
-        const foodNutritionDB = {
-            // Fruits
-            'banana': { name: 'Banana', portion: '1 medium (118g)', calories: 105, protein: 1, carbs: 27, fats: 0, icon: '🍌' },
-            'orange': { name: 'Orange', portion: '1 medium (131g)', calories: 62, protein: 1, carbs: 15, fats: 0, icon: '🍊' },
-            'apple': { name: 'Apple', portion: '1 medium (182g)', calories: 95, protein: 0, carbs: 25, fats: 0, icon: '🍎' },
-            'strawberry': { name: 'Strawberries', portion: '1 cup (144g)', calories: 46, protein: 1, carbs: 11, fats: 0, icon: '🍓' },
-            'pineapple': { name: 'Pineapple', portion: '1 cup (165g)', calories: 82, protein: 1, carbs: 22, fats: 0, icon: '🍍' },
-            'lemon': { name: 'Lemon', portion: '1 medium (58g)', calories: 17, protein: 1, carbs: 5, fats: 0, icon: '🍋' },
-            'fig': { name: 'Fig', portion: '1 medium (50g)', calories: 37, protein: 0, carbs: 10, fats: 0, icon: '🍇' },
-            'pomegranate': { name: 'Pomegranate', portion: '1/2 cup (87g)', calories: 72, protein: 1, carbs: 16, fats: 1, icon: '🍎' },
-            'granny_smith': { name: 'Green Apple', portion: '1 medium (182g)', calories: 95, protein: 0, carbs: 25, fats: 0, icon: '🍏' },
-
-            // Vegetables
-            'broccoli': { name: 'Broccoli', portion: '1 cup (91g)', calories: 55, protein: 4, carbs: 11, fats: 1, icon: '🥦' },
-            'cauliflower': { name: 'Cauliflower', portion: '1 cup (100g)', calories: 25, protein: 2, carbs: 5, fats: 0, icon: '🥬' },
-            'cucumber': { name: 'Cucumber', portion: '1 medium (201g)', calories: 30, protein: 1, carbs: 6, fats: 0, icon: '🥒' },
-            'bell_pepper': { name: 'Bell Pepper', portion: '1 medium (119g)', calories: 24, protein: 1, carbs: 6, fats: 0, icon: '🫑' },
-            'mushroom': { name: 'Mushrooms', portion: '1 cup (70g)', calories: 15, protein: 2, carbs: 2, fats: 0, icon: '🍄' },
-            'head_cabbage': { name: 'Cabbage', portion: '1 cup (89g)', calories: 22, protein: 1, carbs: 5, fats: 0, icon: '🥬' },
-            'artichoke': { name: 'Artichoke', portion: '1 medium (128g)', calories: 60, protein: 4, carbs: 13, fats: 0, icon: '🌿' },
-            'zucchini': { name: 'Zucchini', portion: '1 medium (196g)', calories: 33, protein: 2, carbs: 6, fats: 1, icon: '🥒' },
-            'spaghetti_squash': { name: 'Spaghetti Squash', portion: '1 cup (155g)', calories: 42, protein: 1, carbs: 10, fats: 0, icon: '🎃' },
-            'butternut_squash': { name: 'Butternut Squash', portion: '1 cup (205g)', calories: 82, protein: 2, carbs: 22, fats: 0, icon: '🎃' },
-            'acorn_squash': { name: 'Acorn Squash', portion: '1 cup (205g)', calories: 115, protein: 2, carbs: 30, fats: 0, icon: '🎃' },
-
-            // Prepared Foods
-            'pizza': { name: 'Pizza Slice', portion: '1 slice (107g)', calories: 285, protein: 12, carbs: 36, fats: 10, icon: '🍕' },
-            'hamburger': { name: 'Hamburger', portion: '1 burger (226g)', calories: 540, protein: 34, carbs: 40, fats: 27, icon: '🍔' },
-            'cheeseburger': { name: 'Cheeseburger', portion: '1 burger (256g)', calories: 620, protein: 38, carbs: 42, fats: 33, icon: '🍔' },
-            'hotdog': { name: 'Hot Dog', portion: '1 hot dog (116g)', calories: 290, protein: 11, carbs: 24, fats: 17, icon: '🌭' },
-            'french_fries': { name: 'French Fries', portion: 'medium (117g)', calories: 365, protein: 4, carbs: 48, fats: 17, icon: '🍟' },
-            'burrito': { name: 'Burrito', portion: '1 burrito (272g)', calories: 430, protein: 19, carbs: 50, fats: 18, icon: '🌯' },
-            'taco': { name: 'Taco', portion: '1 taco (85g)', calories: 170, protein: 8, carbs: 13, fats: 9, icon: '🌮' },
-            'sandwich': { name: 'Sandwich', portion: '1 sandwich (150g)', calories: 350, protein: 15, carbs: 35, fats: 16, icon: '🥪' },
-            'bagel': { name: 'Bagel', portion: '1 bagel (98g)', calories: 277, protein: 11, carbs: 55, fats: 1, icon: '🥯' },
-
-            // Pasta & Rice
-            'spaghetti_bolognese': { name: 'Spaghetti Bolognese', portion: '1 plate (350g)', calories: 520, protein: 25, carbs: 65, fats: 18, icon: '🍝' },
-            'carbonara': { name: 'Pasta Carbonara', portion: '1 plate (300g)', calories: 580, protein: 22, carbs: 55, fats: 28, icon: '🍝' },
-            'plate': { name: 'Rice Bowl', portion: '1 bowl (200g)', calories: 260, protein: 5, carbs: 57, fats: 1, icon: '🍚' },
-            'meat_loaf': { name: 'Meatloaf', portion: '1 slice (113g)', calories: 250, protein: 17, carbs: 8, fats: 17, icon: '🍖' },
-
-            // Breakfast
-            'waffle': { name: 'Waffle', portion: '1 waffle (75g)', calories: 218, protein: 6, carbs: 25, fats: 11, icon: '🧇' },
-            'pancake': { name: 'Pancakes', portion: '3 pancakes (114g)', calories: 280, protein: 8, carbs: 45, fats: 8, icon: '🥞' },
-            'eggs': { name: 'Eggs', portion: '2 large', calories: 140, protein: 12, carbs: 1, fats: 10, icon: '🥚' },
-            'breakfast_burrito': { name: 'Breakfast Burrito', portion: '1 burrito (163g)', calories: 305, protein: 13, carbs: 29, fats: 15, icon: '🌯' },
-
-            // Soups & Bowls
-            'soup': { name: 'Soup', portion: '1 bowl (245g)', calories: 150, protein: 8, carbs: 18, fats: 5, icon: '🍜' },
-            'consomme': { name: 'Broth/Consomme', portion: '1 cup (240g)', calories: 29, protein: 5, carbs: 2, fats: 0, icon: '🥣' },
-            'guacamole': { name: 'Guacamole', portion: '1/4 cup (57g)', calories: 90, protein: 1, carbs: 5, fats: 8, icon: '🥑' },
-
-            // Desserts
-            'ice_cream': { name: 'Ice Cream', portion: '1/2 cup (66g)', calories: 137, protein: 2, carbs: 16, fats: 7, icon: '🍦' },
-            'chocolate_cake': { name: 'Chocolate Cake', portion: '1 slice (95g)', calories: 352, protein: 4, carbs: 51, fats: 15, icon: '🍰' },
-            'cheesecake': { name: 'Cheesecake', portion: '1 slice (125g)', calories: 401, protein: 7, carbs: 33, fats: 28, icon: '🍰' },
-            'cupcake': { name: 'Cupcake', portion: '1 cupcake (55g)', calories: 175, protein: 2, carbs: 26, fats: 7, icon: '🧁' },
-            'brownie': { name: 'Brownie', portion: '1 brownie (56g)', calories: 227, protein: 3, carbs: 36, fats: 9, icon: '🍫' },
-            'pretzel': { name: 'Pretzel', portion: '1 large (115g)', calories: 380, protein: 9, carbs: 79, fats: 4, icon: '🥨' },
-            'doughnut': { name: 'Doughnut', portion: '1 doughnut (60g)', calories: 252, protein: 3, carbs: 29, fats: 14, icon: '🍩' },
-
-            // Seafood
-            'lobster': { name: 'Lobster', portion: '3 oz (85g)', calories: 76, protein: 16, carbs: 0, fats: 1, icon: '🦞' },
-            'crab': { name: 'Crab', portion: '3 oz (85g)', calories: 82, protein: 16, carbs: 0, fats: 1, icon: '🦀' },
-            'shrimp': { name: 'Shrimp', portion: '3 oz (85g)', calories: 84, protein: 18, carbs: 0, fats: 1, icon: '🦐' },
-
-            // Bread & Bakery
-            'bread': { name: 'Bread', portion: '1 slice (30g)', calories: 79, protein: 3, carbs: 15, fats: 1, icon: '🍞' },
-            'baguette': { name: 'Baguette', portion: '2 slices (60g)', calories: 158, protein: 5, carbs: 31, fats: 1, icon: '🥖' },
-            'croissant': { name: 'Croissant', portion: '1 croissant (57g)', calories: 231, protein: 5, carbs: 26, fats: 12, icon: '🥐' },
-
-            // Meats
-            'steak': { name: 'Steak', portion: '6 oz (170g)', calories: 271, protein: 26, carbs: 0, fats: 18, icon: '🥩' },
-            'pork_chop': { name: 'Pork Chop', portion: '1 chop (145g)', calories: 236, protein: 27, carbs: 0, fats: 14, icon: '🍖' },
-            'chicken': { name: 'Chicken Breast', portion: '1 breast (172g)', calories: 284, protein: 53, carbs: 0, fats: 6, icon: '🍗' },
-            'drumstick': { name: 'Chicken Drumstick', portion: '1 drumstick (96g)', calories: 152, protein: 20, carbs: 0, fats: 8, icon: '🍗' },
-
-            // Drinks
-            'espresso': { name: 'Espresso', portion: '1 shot (30ml)', calories: 3, protein: 0, carbs: 0, fats: 0, icon: '☕' },
-            'cup': { name: 'Coffee', portion: '1 cup (240ml)', calories: 5, protein: 0, carbs: 0, fats: 0, icon: '☕' },
-            'beer_glass': { name: 'Beer', portion: '1 glass (355ml)', calories: 153, protein: 2, carbs: 13, fats: 0, icon: '🍺' },
-            'wine_glass': { name: 'Wine', portion: '1 glass (150ml)', calories: 125, protein: 0, carbs: 4, fats: 0, icon: '🍷' },
-            'cocktail': { name: 'Cocktail', portion: '1 glass (150ml)', calories: 180, protein: 0, carbs: 15, fats: 0, icon: '🍹' },
-
-            // Other common foods
-            'cheese': { name: 'Cheese', portion: '1 oz (28g)', calories: 113, protein: 7, carbs: 0, fats: 9, icon: '🧀' },
-            'butter': { name: 'Butter', portion: '1 tbsp (14g)', calories: 102, protein: 0, carbs: 0, fats: 12, icon: '🧈' },
-            'chocolate': { name: 'Chocolate', portion: '1 bar (44g)', calories: 235, protein: 3, carbs: 26, fats: 13, icon: '🍫' },
-            'popcorn': { name: 'Popcorn', portion: '3 cups (24g)', calories: 93, protein: 3, carbs: 19, fats: 1, icon: '🍿' },
-            'candy': { name: 'Candy', portion: '1 oz (28g)', calories: 110, protein: 0, carbs: 27, fats: 0, icon: '🍬' },
-
-            // Salads
-            'salad': { name: 'Garden Salad', portion: '2 cups (150g)', calories: 35, protein: 2, carbs: 7, fats: 0, icon: '🥗' },
-            'caesar_salad': { name: 'Caesar Salad', portion: '1 bowl (200g)', calories: 190, protein: 8, carbs: 8, fats: 14, icon: '🥗' },
-
-            // Default fallback
-            'food': { name: 'Mixed Food', portion: '1 serving', calories: 250, protein: 10, carbs: 30, fats: 10, icon: '🍽️' }
-        };
-
         // Food Recognition functionality
         function setupFoodRecognition() {
             const foodUploadZone = document.getElementById('food-upload-zone');
@@ -1731,6 +1795,18 @@ Please try again with a different photo.`;
             const analyzeFoodBtn = document.getElementById('analyze-food-btn');
             const foodResults = document.getElementById('food-results');
 
+            // Confirmation UI elements
+            const foodConfirmation = document.getElementById('food-confirmation');
+            const suggestionIcon = document.getElementById('suggestion-icon');
+            const suggestionName = document.getElementById('suggestion-name');
+            const foodDetectConfidence = document.getElementById('food-detect-confidence');
+            const confirmFoodBtn = document.getElementById('confirm-food-btn');
+            const changeFoodBtn = document.getElementById('change-food-btn');
+            const foodSearchBox = document.getElementById('food-search-box');
+            const foodSearchInput = document.getElementById('food-search-input');
+            const foodSearchBtn = document.getElementById('food-search-btn');
+            const foodSearchResults = document.getElementById('food-search-results');
+
             if (!foodUploadZone) return;
 
             // Initialize MobileNet when entering nutrition screen
@@ -1739,9 +1815,15 @@ Please try again with a different photo.`;
             let foodCameraStream = null;
             let foodFacingMode = 'environment';
             let foodImageData = null;
+            let detectedFoodData = null; // Store detected food for confirmation
+            let detectedFoodName = ''; // Store the detected food name for API search
 
             // Mode toggle
-            foodUploadModeBtn?.addEventListener('click', () => setFoodInputMode('upload'));
+            foodUploadModeBtn?.addEventListener('click', () => {
+                setFoodInputMode('upload');
+                // Also trigger file picker when clicking upload button
+                if (foodFileInput) foodFileInput.click();
+            });
             foodCameraModeBtn?.addEventListener('click', () => setFoodInputMode('camera'));
 
             // Upload zone click
@@ -1784,6 +1866,306 @@ Please try again with a different photo.`;
                 alert('Food added to daily log! (Demo mode)');
                 clearFoodPreview();
             });
+
+            // Scan new food button
+            document.getElementById('scan-new-food-btn')?.addEventListener('click', () => {
+                clearFoodPreview();
+            });
+
+            // Confirm food button - search API for the detected food name
+            confirmFoodBtn?.addEventListener('click', async () => {
+                if (detectedFoodName) {
+                    foodConfirmation.style.display = 'none';
+                    await searchAndDisplayFood(detectedFoodName);
+                }
+            });
+
+            // Change food button - show search input
+            changeFoodBtn?.addEventListener('click', () => {
+                foodSearchBox.style.display = 'block';
+                foodSearchInput.value = '';
+                foodSearchResults.style.display = 'none';
+                foodSearchInput.focus();
+            });
+
+            // Food search button click
+            foodSearchBtn?.addEventListener('click', () => {
+                performFoodSearch();
+            });
+
+            // Auto-search as user types (with debounce)
+            let searchDebounceTimer = null;
+            let highlightedIndex = -1;
+            let currentResults = [];
+
+            foodSearchInput?.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                highlightedIndex = -1;
+
+                // Clear previous timer
+                if (searchDebounceTimer) {
+                    clearTimeout(searchDebounceTimer);
+                }
+
+                // Hide results if query is too short
+                if (query.length < 2) {
+                    foodSearchResults.style.display = 'none';
+                    currentResults = [];
+                    return;
+                }
+
+                // Show loading indicator
+                foodSearchResults.style.display = 'block';
+                foodSearchResults.innerHTML = '<div class="food-search-loading">Searching...</div>';
+
+                // Debounce: wait 300ms after user stops typing
+                searchDebounceTimer = setTimeout(async () => {
+                    try {
+                        const results = await searchNutritionAPI(query);
+                        currentResults = results || [];
+                        displaySearchResults(results);
+                    } catch (error) {
+                        console.error('Search error:', error);
+                        currentResults = [];
+                        foodSearchResults.innerHTML = '<div class="food-search-loading">Search failed. Try again.</div>';
+                    }
+                }, 300);
+            });
+
+            // Keyboard navigation for autocomplete
+            foodSearchInput?.addEventListener('keydown', (e) => {
+                const items = foodSearchResults.querySelectorAll('.food-search-result-item');
+                if (items.length === 0) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
+                    updateHighlight(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    highlightedIndex = Math.max(highlightedIndex - 1, -1);
+                    updateHighlight(items);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (highlightedIndex >= 0 && currentResults[highlightedIndex]) {
+                        selectFood(currentResults[highlightedIndex]);
+                    } else if (foodSearchInput.value.trim()) {
+                        performFoodSearch();
+                    }
+                } else if (e.key === 'Escape') {
+                    foodSearchResults.style.display = 'none';
+                    highlightedIndex = -1;
+                }
+            });
+
+            function updateHighlight(items) {
+                items.forEach((item, index) => {
+                    item.classList.toggle('highlighted', index === highlightedIndex);
+                    if (index === highlightedIndex) {
+                        item.scrollIntoView({ block: 'nearest' });
+                    }
+                });
+            }
+
+            function selectFood(food) {
+                detectedFoodData = food;
+                foodConfirmation.style.display = 'none';
+                foodSearchBox.style.display = 'none';
+                foodSearchResults.style.display = 'none';
+                highlightedIndex = -1;
+                displayFoodResults({ foods: [food], confidence: 'high' });
+            }
+
+            // Perform food search using API
+            async function performFoodSearch() {
+                const query = foodSearchInput.value.trim();
+                if (!query) return;
+
+                foodSearchResults.style.display = 'block';
+                foodSearchResults.innerHTML = '<div class="food-search-loading">Searching...</div>';
+
+                try {
+                    const results = await searchNutritionAPI(query);
+                    displaySearchResults(results);
+                } catch (error) {
+                    console.error('Search error:', error);
+                    foodSearchResults.innerHTML = '<div class="food-search-loading">Search failed. Try again.</div>';
+                }
+            }
+
+            // Display search results
+            function displaySearchResults(results) {
+                if (!results || results.length === 0) {
+                    foodSearchResults.innerHTML = '<div class="food-search-loading">No results found. Try different keywords.</div>';
+                    return;
+                }
+
+                let html = '';
+                results.forEach((food, index) => {
+                    html += `
+                        <div class="food-search-result-item" data-index="${index}">
+                            <div class="food-search-result-name">${food.name}</div>
+                            <div class="food-search-result-info">${food.calories} cal | P: ${food.protein}g | C: ${food.carbs}g | F: ${food.fats}g</div>
+                        </div>
+                    `;
+                });
+                foodSearchResults.innerHTML = html;
+
+                // Add click handlers for results
+                foodSearchResults.querySelectorAll('.food-search-result-item').forEach((item) => {
+                    item.addEventListener('click', () => {
+                        const index = parseInt(item.dataset.index);
+                        const selectedFood = results[index];
+                        detectedFoodData = selectedFood;
+                        foodConfirmation.style.display = 'none';
+                        foodSearchBox.style.display = 'none';
+                        displayFoodResults({ foods: [selectedFood], confidence: 'high' });
+                    });
+                });
+            }
+
+            // Search nutrition API and display results
+            async function searchAndDisplayFood(foodName) {
+                try {
+                    const results = await searchNutritionAPI(foodName);
+                    if (results && results.length > 0) {
+                        detectedFoodData = results[0];
+                        displayFoodResults({ foods: [results[0]], confidence: 'high' });
+                    } else {
+                        // Fallback to local database if API fails
+                        displayFoodResults({ foods: [{ name: foodName, calories: 100, protein: 5, carbs: 10, fats: 3, portion: '1 serving', icon: '🍽️' }], confidence: 'low' });
+                    }
+                } catch (error) {
+                    console.error('API search failed:', error);
+                    displayFoodResults({ foods: [{ name: foodName, calories: 100, protein: 5, carbs: 10, fats: 3, portion: '1 serving', icon: '🍽️' }], confidence: 'low' });
+                }
+            }
+
+            // Local food database for offline/fallback use
+            const localFoodDatabase = [
+                { name: 'Banana', calories: 89, protein: 1, carbs: 23, fats: 0, portion: '1 medium (118g)', icon: '🍌' },
+                { name: 'Apple', calories: 95, protein: 0, carbs: 25, fats: 0, portion: '1 medium (182g)', icon: '🍎' },
+                { name: 'Orange', calories: 62, protein: 1, carbs: 15, fats: 0, portion: '1 medium (131g)', icon: '🍊' },
+                { name: 'Grapes', calories: 104, protein: 1, carbs: 27, fats: 0, portion: '1 cup (151g)', icon: '🍇' },
+                { name: 'Strawberries', calories: 49, protein: 1, carbs: 12, fats: 0, portion: '1 cup (152g)', icon: '🍓' },
+                { name: 'Blueberries', calories: 85, protein: 1, carbs: 21, fats: 0, portion: '1 cup (148g)', icon: '🫐' },
+                { name: 'Chicken Breast', calories: 165, protein: 31, carbs: 0, fats: 4, portion: '100g cooked', icon: '🍗' },
+                { name: 'Grilled Chicken', calories: 165, protein: 31, carbs: 0, fats: 4, portion: '100g', icon: '🍗' },
+                { name: 'Salmon', calories: 208, protein: 20, carbs: 0, fats: 13, portion: '100g cooked', icon: '🐟' },
+                { name: 'Tuna', calories: 132, protein: 28, carbs: 0, fats: 1, portion: '100g canned', icon: '🐟' },
+                { name: 'Beef Steak', calories: 271, protein: 26, carbs: 0, fats: 18, portion: '100g cooked', icon: '🥩' },
+                { name: 'Ground Beef', calories: 250, protein: 26, carbs: 0, fats: 15, portion: '100g cooked', icon: '🥩' },
+                { name: 'Eggs', calories: 155, protein: 13, carbs: 1, fats: 11, portion: '2 large eggs', icon: '🥚' },
+                { name: 'Boiled Eggs', calories: 155, protein: 13, carbs: 1, fats: 11, portion: '2 large eggs', icon: '🥚' },
+                { name: 'Scrambled Eggs', calories: 182, protein: 12, carbs: 2, fats: 14, portion: '2 eggs', icon: '🥚' },
+                { name: 'Oatmeal', calories: 158, protein: 6, carbs: 27, fats: 3, portion: '1 cup cooked', icon: '🥣' },
+                { name: 'White Rice', calories: 206, protein: 4, carbs: 45, fats: 0, portion: '1 cup cooked', icon: '🍚' },
+                { name: 'Brown Rice', calories: 216, protein: 5, carbs: 45, fats: 2, portion: '1 cup cooked', icon: '🍚' },
+                { name: 'Pasta', calories: 220, protein: 8, carbs: 43, fats: 1, portion: '1 cup cooked', icon: '🍝' },
+                { name: 'Bread', calories: 79, protein: 3, carbs: 15, fats: 1, portion: '1 slice', icon: '🍞' },
+                { name: 'Whole Wheat Bread', calories: 81, protein: 4, carbs: 14, fats: 1, portion: '1 slice', icon: '🍞' },
+                { name: 'Broccoli', calories: 55, protein: 4, carbs: 11, fats: 1, portion: '1 cup cooked', icon: '🥦' },
+                { name: 'Spinach', calories: 41, protein: 5, carbs: 7, fats: 0, portion: '1 cup cooked', icon: '🥬' },
+                { name: 'Carrots', calories: 52, protein: 1, carbs: 12, fats: 0, portion: '1 cup raw', icon: '🥕' },
+                { name: 'Sweet Potato', calories: 103, protein: 2, carbs: 24, fats: 0, portion: '1 medium', icon: '🍠' },
+                { name: 'Potato', calories: 161, protein: 4, carbs: 37, fats: 0, portion: '1 medium', icon: '🥔' },
+                { name: 'Avocado', calories: 234, protein: 3, carbs: 12, fats: 21, portion: '1 medium', icon: '🥑' },
+                { name: 'Greek Yogurt', calories: 100, protein: 17, carbs: 6, fats: 1, portion: '170g container', icon: '🥛' },
+                { name: 'Milk', calories: 149, protein: 8, carbs: 12, fats: 8, portion: '1 cup', icon: '🥛' },
+                { name: 'Cheese', calories: 113, protein: 7, carbs: 0, fats: 9, portion: '1 oz (28g)', icon: '🧀' },
+                { name: 'Almonds', calories: 164, protein: 6, carbs: 6, fats: 14, portion: '1 oz (23 nuts)', icon: '🥜' },
+                { name: 'Peanut Butter', calories: 188, protein: 8, carbs: 6, fats: 16, portion: '2 tbsp', icon: '🥜' },
+                { name: 'Protein Shake', calories: 120, protein: 24, carbs: 3, fats: 1, portion: '1 scoop', icon: '🥤' },
+                { name: 'Pizza', calories: 285, protein: 12, carbs: 36, fats: 10, portion: '1 slice', icon: '🍕' },
+                { name: 'Hamburger', calories: 354, protein: 20, carbs: 29, fats: 17, portion: '1 burger', icon: '🍔' },
+                { name: 'Salad', calories: 20, protein: 2, carbs: 4, fats: 0, portion: '1 cup mixed greens', icon: '🥗' },
+                { name: 'Chicken Salad', calories: 180, protein: 22, carbs: 8, fats: 7, portion: '1 serving', icon: '🥗' },
+                { name: 'Coffee', calories: 2, protein: 0, carbs: 0, fats: 0, portion: '1 cup black', icon: '☕' },
+                { name: 'Orange Juice', calories: 112, protein: 2, carbs: 26, fats: 0, portion: '1 cup', icon: '🍊' },
+                { name: 'Smoothie', calories: 180, protein: 5, carbs: 35, fats: 2, portion: '1 cup', icon: '🥤' }
+            ];
+
+            // Search local database
+            function searchLocalDatabase(query) {
+                const searchTerm = query.toLowerCase();
+                return localFoodDatabase.filter(food =>
+                    food.name.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Nutrition API search function (local database first, then API fallback)
+            async function searchNutritionAPI(query) {
+                // First, check local database for matches (more accurate for common foods)
+                const localResults = searchLocalDatabase(query);
+                if (localResults.length > 0) {
+                    console.log('Found in local database:', localResults);
+                    return localResults;
+                }
+
+                // If no local match, try the API
+                const API_KEY = 'dVJQPgDsCyccGlMqeVhAU3tdWzNtolzSrcVQLggN';
+                console.log('Not in local DB, searching API for:', query);
+
+                try {
+                    const response = await fetch(`https://api.api-ninjas.com/v1/nutrition?query=${encodeURIComponent(query)}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Api-Key': API_KEY
+                        }
+                    });
+
+                    console.log('API Response status:', response.status);
+
+                    if (!response.ok) {
+                        console.error('API Error:', response.status, response.statusText);
+                        return [];
+                    }
+
+                    const data = await response.json();
+                    console.log('API Response data:', data);
+
+                    if (Array.isArray(data) && data.length > 0) {
+                        return data.map(item => ({
+                            name: item.name.charAt(0).toUpperCase() + item.name.slice(1),
+                            calories: Math.round(item.calories) || 0,
+                            protein: Math.round(item.protein_g) || 0,
+                            carbs: Math.round(item.carbohydrates_total_g) || 0,
+                            fats: Math.round(item.fat_total_g) || 0,
+                            portion: `${Math.round(item.serving_size_g) || 100}g serving`,
+                            icon: getFoodIcon(item.name)
+                        }));
+                    } else {
+                        console.log('No API results found');
+                        return [];
+                    }
+                } catch (e) {
+                    console.error('CalorieNinjas API error:', e);
+                    return [];
+                }
+            }
+
+            // Get appropriate food icon based on name
+            function getFoodIcon(foodName) {
+                const name = foodName.toLowerCase();
+                if (name.includes('egg')) return '🥚';
+                if (name.includes('chicken')) return '🍗';
+                if (name.includes('beef') || name.includes('steak')) return '🥩';
+                if (name.includes('fish') || name.includes('salmon')) return '🐟';
+                if (name.includes('rice')) return '🍚';
+                if (name.includes('bread')) return '🍞';
+                if (name.includes('salad')) return '🥗';
+                if (name.includes('fruit') || name.includes('apple')) return '🍎';
+                if (name.includes('banana')) return '🍌';
+                if (name.includes('orange')) return '🍊';
+                if (name.includes('vegetable') || name.includes('broccoli')) return '🥦';
+                if (name.includes('pizza')) return '🍕';
+                if (name.includes('burger')) return '🍔';
+                if (name.includes('pasta') || name.includes('spaghetti')) return '🍝';
+                if (name.includes('soup')) return '🍜';
+                if (name.includes('coffee')) return '☕';
+                if (name.includes('milk')) return '🥛';
+                return '🍽️';
+            }
 
             function setFoodInputMode(mode) {
                 if (mode === 'camera') {
@@ -1917,12 +2299,42 @@ Please try again with a different photo.`;
 
             function clearFoodPreview() {
                 foodImageData = null;
+                detectedFoodData = null;
+                detectedFoodName = '';
                 foodPreviewImage.src = '';
                 foodPreview.style.display = 'none';
                 foodUploadZone.style.display = 'block';
                 analyzeFoodBtn.style.display = 'none';
                 foodResults.style.display = 'none';
+                foodConfirmation.style.display = 'none';
+                foodSearchBox.style.display = 'none';
+                foodSearchResults.style.display = 'none';
                 if (foodFileInput) foodFileInput.value = '';
+                if (foodSearchInput) foodSearchInput.value = '';
+            }
+
+            function showFoodConfirmation(results) {
+                // Get the top detected food
+                const topFood = results.foods[0];
+                detectedFoodData = topFood;
+                detectedFoodName = topFood.name || 'Unknown Food'; // Store name for API search
+
+                // Update confirmation UI
+                suggestionIcon.textContent = topFood.icon || '🍽️';
+                suggestionName.textContent = detectedFoodName;
+
+                // Set confidence badge
+                foodDetectConfidence.textContent = results.confidence.charAt(0).toUpperCase() + results.confidence.slice(1) + ' Confidence';
+                foodDetectConfidence.className = 'food-confidence ' + results.confidence;
+
+                // Reset search box
+                foodSearchBox.style.display = 'none';
+                foodSearchResults.style.display = 'none';
+                if (foodSearchInput) foodSearchInput.value = '';
+
+                // Show confirmation, hide results
+                foodConfirmation.style.display = 'block';
+                foodResults.style.display = 'none';
             }
 
             async function analyzeFood() {
@@ -1964,89 +2376,59 @@ Please try again with a different photo.`;
 
                     // Process predictions and match to food database
                     const results = processFoodPredictions(predictions);
-                    displayFoodResults(results);
+
+                    // Show confirmation UI instead of results directly
+                    showFoodConfirmation(results);
 
                 } catch (error) {
                     console.error('Food analysis error:', error);
-                    // Fallback to simulation if AI fails
-                    const results = simulateFoodRecognition();
-                    displayFoodResults(results);
+                    // Fallback - show generic food prompt for user to search
+                    showFoodConfirmation({
+                        foods: [{
+                            name: 'Unknown Food',
+                            icon: '🍽️',
+                            confidence: 0
+                        }],
+                        confidence: 'low'
+                    });
                 }
 
                 analyzeFoodBtn.disabled = false;
+                analyzeFoodBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    Analyze Food
+                `;
                 analyzeFoodBtn.style.display = 'none';
             }
 
             function processFoodPredictions(predictions) {
-                const detectedFoods = [];
-                let maxProbability = 0;
+                console.log('Processing predictions:', predictions);
 
-                for (const prediction of predictions) {
-                    const className = prediction.className.toLowerCase();
-                    const probability = prediction.probability;
+                // Get the top prediction from MobileNet
+                const topPrediction = predictions[0];
+                const probability = topPrediction.probability;
 
-                    if (probability > maxProbability) {
-                        maxProbability = probability;
-                    }
+                // Extract the first word/name from the prediction (remove extra descriptors)
+                let foodName = topPrediction.className.split(',')[0].trim();
+                // Capitalize first letter
+                foodName = foodName.charAt(0).toUpperCase() + foodName.slice(1);
 
-                    // Search for matching food in our database
-                    let matchedFood = null;
-
-                    // Check each word in the prediction
-                    const words = className.split(/[,\s]+/);
-                    for (const word of words) {
-                        const cleanWord = word.replace(/[^a-z_]/g, '');
-
-                        // Direct match
-                        if (foodNutritionDB[cleanWord]) {
-                            matchedFood = { ...foodNutritionDB[cleanWord] };
-                            break;
-                        }
-
-                        // Partial match search
-                        for (const [key, value] of Object.entries(foodNutritionDB)) {
-                            if (key.includes(cleanWord) || cleanWord.includes(key) ||
-                                value.name.toLowerCase().includes(cleanWord)) {
-                                matchedFood = { ...value };
-                                break;
-                            }
-                        }
-
-                        if (matchedFood) break;
-                    }
-
-                    // If we found a match and probability is decent, add it
-                    if (matchedFood && probability > 0.05) {
-                        // Avoid duplicates
-                        if (!detectedFoods.find(f => f.name === matchedFood.name)) {
-                            matchedFood.confidence = probability;
-                            detectedFoods.push(matchedFood);
-                        }
-                    }
-                }
-
-                // If no foods detected, use the top prediction with a generic entry
-                if (detectedFoods.length === 0) {
-                    const topPrediction = predictions[0];
-                    detectedFoods.push({
-                        name: topPrediction.className.split(',')[0],
-                        portion: '1 serving',
-                        calories: 200,
-                        protein: 8,
-                        carbs: 25,
-                        fats: 8,
-                        icon: '🍽️',
-                        confidence: topPrediction.probability
-                    });
-                }
-
-                // Determine overall confidence
+                // Determine confidence based on probability
                 let confidence = 'high';
-                if (maxProbability < 0.3) confidence = 'low';
-                else if (maxProbability < 0.6) confidence = 'medium';
+                if (probability < 0.3) confidence = 'low';
+                else if (probability < 0.6) confidence = 'medium';
 
+                // Return the detected food name for user confirmation
+                // Actual nutrition data will be fetched from API after user confirms
                 return {
-                    foods: detectedFoods.slice(0, 4), // Max 4 items
+                    foods: [{
+                        name: foodName,
+                        icon: getFoodIcon(foodName),
+                        confidence: probability
+                    }],
                     confidence: confidence,
                     rawPredictions: predictions
                 };
