@@ -307,6 +307,53 @@
                                 <option value="athlete">Athlete</option>
                             </select>
                         </div>
+
+                        <div class="input-group">
+                            <label class="input-label">Fitness Goal <span class="required-badge">Required</span></label>
+                            <div class="goal-selector" id="goal-selector">
+                                <button class="goal-option" data-goal="lose-weight">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 20V10"/>
+                                        <path d="m18 14-6-6-6 6"/>
+                                    </svg>
+                                    <span class="goal-title">Lose Weight</span>
+                                    <span class="goal-desc">Burn fat & slim down</span>
+                                </button>
+                                <button class="goal-option" data-goal="build-muscle">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M6.5 6.5L17.5 17.5"/>
+                                        <path d="M7 2l-5 5 5 5"/>
+                                        <path d="M17 22l5-5-5-5"/>
+                                        <path d="M2 7h5"/>
+                                        <path d="M17 17h5"/>
+                                    </svg>
+                                    <span class="goal-title">Build Muscle</span>
+                                    <span class="goal-desc">Gain strength & size</span>
+                                </button>
+                                <button class="goal-option" data-goal="maintain">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                        <polyline points="12 5 19 12 12 19"/>
+                                    </svg>
+                                    <span class="goal-title">Maintain</span>
+                                    <span class="goal-desc">Stay fit & healthy</span>
+                                </button>
+                                <button class="goal-option" data-goal="recomp">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 2v4"/>
+                                        <path d="M12 18v4"/>
+                                        <path d="m4.93 4.93 2.83 2.83"/>
+                                        <path d="m16.24 16.24 2.83 2.83"/>
+                                        <path d="M2 12h4"/>
+                                        <path d="M18 12h4"/>
+                                        <path d="m4.93 19.07 2.83-2.83"/>
+                                        <path d="m16.24 7.76 2.83-2.83"/>
+                                    </svg>
+                                    <span class="goal-title">Recomposition</span>
+                                    <span class="goal-desc">Lose fat & build muscle</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="disclaimer">
@@ -726,7 +773,7 @@
                                 </div>
                             </div>
                             <div class="section-score">
-                                <span class="score-value" style="color: var(--accent-amber);">68/100</span>
+                                <span class="score-value" style="color: var(--text-primary);">68/100</span>
                                 <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="6 9 12 15 18 9"/>
                                 </svg>
@@ -806,7 +853,7 @@
                                 </div>
                             </div>
                             <div class="section-score">
-                                <span class="score-value" style="color: var(--accent-purple);">78/100</span>
+                                <span class="score-value" style="color: var(--text-primary);">78/100</span>
                                 <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="6 9 12 15 18 9"/>
                                 </svg>
@@ -1696,11 +1743,11 @@
                         </svg>
                     </div>
                     <div class="protein-banner-text">
-                        <h3>Protein Priority for Your Goals</h3>
-                        <p>Based on your athletic build and muscle development goals, we recommend prioritizing protein intake to maintain and build lean mass.</p>
+                        <h3 id="nutrition-goal-title">Protein Priority for Your Goals</h3>
+                        <p id="nutrition-goal-message">Based on your athletic build and muscle development goals, we recommend prioritizing protein intake to maintain and build lean mass.</p>
                     </div>
                     <div class="protein-target">
-                        <div class="protein-target-value">145g</div>
+                        <div class="protein-target-value" id="protein-target-display">145g</div>
                         <div class="protein-target-label">Daily Target</div>
                     </div>
                 </div>
@@ -1714,7 +1761,7 @@
                                 <p class="subtitle" style="max-width: none;">Personalized macronutrient goals based on your body composition and activity level.</p>
                             </div>
                             <div class="calorie-target">
-                                <div class="calorie-number">2,450</div>
+                                <div class="calorie-number" id="calorie-target-display">2,450</div>
                                 <div class="calorie-label">Daily Calories</div>
                             </div>
                         </div>
@@ -1733,10 +1780,10 @@
                                     <div class="macro-info">
                                         <div class="macro-name-row">
                                             <span class="macro-name">Protein</span>
-                                            <span class="macro-amount"><span>145g</span> / 145g target</span>
+                                            <span class="macro-amount" id="protein-macro-display"><span>145g</span> / 145g target</span>
                                         </div>
                                         <div class="macro-bar-track">
-                                            <div class="macro-bar-fill protein" style="width: 100%;"></div>
+                                            <div class="macro-bar-fill protein" id="protein-bar-fill" style="width: 100%;"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -1753,7 +1800,7 @@
                                     <div class="macro-info">
                                         <div class="macro-name-row">
                                             <span class="macro-name">Carbohydrates</span>
-                                            <span class="macro-amount"><span>280g</span> / 300g target</span>
+                                            <span class="macro-amount" id="carbs-macro-display"><span>280g</span> / 300g target</span>
                                         </div>
                                         <div class="macro-bar-track">
                                             <div class="macro-bar-fill carbs" style="width: 93%;"></div>
@@ -1772,10 +1819,10 @@
                                     <div class="macro-info">
                                         <div class="macro-name-row">
                                             <span class="macro-name">Healthy Fats</span>
-                                            <span class="macro-amount"><span>72g</span> / 80g target</span>
+                                            <span class="macro-amount" id="fats-macro-display"><span>72g</span> / 80g target</span>
                                         </div>
                                         <div class="macro-bar-track">
-                                            <div class="macro-bar-fill fats" style="width: 90%;"></div>
+                                            <div class="macro-bar-fill fats" id="fats-bar-fill" style="width: 90%;"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -2017,11 +2064,52 @@
                             Analyze Food
                         </button>
 
+                        <!-- Food Detection Confirmation -->
+                        <div class="food-confirmation" id="food-confirmation" style="display: none;">
+                            <div class="food-results-header">
+                                <h3>AI Detected</h3>
+                                <span class="food-confidence" id="food-detect-confidence">Checking...</span>
+                            </div>
+                            <div class="detected-food-suggestion" id="detected-suggestion">
+                                <span class="suggestion-icon" id="suggestion-icon">🍽️</span>
+                                <span class="suggestion-name" id="suggestion-name">Loading...</span>
+                            </div>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 12px 0;">Is this correct?</p>
+                            <div class="food-confirm-actions" style="display: flex; gap: 10px; margin-bottom: 16px;">
+                                <button class="btn-primary" id="confirm-food-btn" style="flex: 1;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    Yes, Correct
+                                </button>
+                                <button class="btn-secondary" id="change-food-btn" style="flex: 1;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                    Change
+                                </button>
+                            </div>
+                            <div class="food-search-box" id="food-search-box" style="display: none;">
+                                <label style="color: var(--text-secondary); font-size: 0.85rem;">Search for correct food:</label>
+                                <div class="food-search-input-wrapper" style="display: flex; gap: 8px; margin-top: 8px;">
+                                    <input type="text" id="food-search-input" class="food-search-input" placeholder="e.g., boiled eggs, grilled chicken...">
+                                    <button class="btn-primary" id="food-search-btn" style="padding: 12px 16px;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+                                            <circle cx="11" cy="11" r="8"/>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div id="food-search-results" class="food-search-results" style="display: none;"></div>
+                            </div>
+                        </div>
+
                         <!-- Food Analysis Results -->
                         <div class="food-results" id="food-results" style="display: none;">
                             <div class="food-results-header">
-                                <h3>Detected Foods</h3>
-                                <span class="food-confidence" id="food-confidence">High Confidence</span>
+                                <h3>Nutrition Info</h3>
+                                <span class="food-confidence" id="food-confidence">Confirmed</span>
                             </div>
                             <div class="detected-foods" id="detected-foods">
                                 <!-- Detected food items will be inserted here -->
@@ -2046,13 +2134,22 @@
                                     </div>
                                 </div>
                             </div>
-                            <button class="btn-secondary" id="add-to-log-btn" style="margin-top: 16px; width: 100%;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
-                                Add to Daily Log
-                            </button>
+                            <div class="food-action-buttons" style="display: flex; gap: 12px; margin-top: 16px;">
+                                <button class="btn-secondary" id="add-to-log-btn" style="flex: 1;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    Add to Log
+                                </button>
+                                <button class="btn-primary" id="scan-new-food-btn" style="flex: 1;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                        <circle cx="12" cy="13" r="4"/>
+                                    </svg>
+                                    Scan New
+                                </button>
+                            </div>
                         </div>
                     </div>
 
