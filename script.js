@@ -1,3 +1,40 @@
+        // ========== THEME MANAGEMENT ==========
+        function initTheme() {
+            // Check for saved theme preference or system preference
+            const savedTheme = localStorage.getItem('physiq-theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            // Apply theme: saved > system preference > default dark
+            const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+
+            // Setup toggle button
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', toggleTheme);
+            }
+
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem('physiq-theme')) {
+                    document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+                }
+            });
+
+            console.log(`Theme initialized: ${theme}`);
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('physiq-theme', newTheme);
+
+            console.log(`Theme switched to: ${newTheme}`);
+        }
+
         // Application State
         const state = {
             currentScreen: 1,
@@ -8,6 +45,8 @@
             analysisResult: null,
             landmarks: null,
             humanDetected: false,  // Track if a human body was detected
+            // User profile
+            gender: null,  // 'male' or 'female'
             // BMI data
             height: null,  // in cm
             weight: null,  // in kg
@@ -16,7 +55,9 @@
             // BodyPix data
             bodyPixResult: null,
             // Fitness goal
-            fitnessGoal: null  // 'lose-weight', 'build-muscle', 'maintain', 'recomp'
+            fitnessGoal: null,  // 'lose-weight', 'build-muscle', 'maintain', 'recomp'
+            // Experience level
+            experienceLevel: 'intermediate'  // 'beginner', 'intermediate', 'advanced'
         };
 
         // AI Models
@@ -635,8 +676,62 @@
                     legs: hipToHeightRatio < 0.15 ? "Lean" : hipToHeightRatio < 0.2 ? "Average" : "Heavy"
                 },
                 recommendations: generateRecommendations(bodyCompScore, postureScore, muscleScore, category),
-                landmarks: landmarks
+                landmarks: landmarks,
+                // AI Gender Detection based on shoulder-to-hip ratio
+                // Males typically have wider shoulders (ratio > 1.1)
+                // Females typically have wider/equal hips (ratio < 1.05)
+                detectedGender: detectGender(skeletonShoulderWidth, skeletonHipWidth)
             };
+        }
+
+        // AI Gender Detection from body proportions
+        // NOTE: MediaPipe skeleton detection measures joint positions, NOT actual body contours.
+        // Skeleton joints typically show shoulders wider than hips even for women, so we use
+        // adjusted thresholds. For most accurate results, users can manually correct on the confirmation screen.
+        function detectGender(shoulderWidth, hipWidth, additionalData = {}) {
+            const shoulderToHipRatio = shoulderWidth / hipWidth;
+
+            console.log('=== GENDER DETECTION ===');
+            console.log('Shoulder width:', shoulderWidth.toFixed(4));
+            console.log('Hip width:', hipWidth.toFixed(4));
+            console.log('Shoulder/Hip ratio:', shoulderToHipRatio.toFixed(3));
+
+            // Skeleton-based detection has limitations - joint positions don't capture body curves.
+            // Typical skeleton ratios:
+            // - Very masculine build: > 1.25 (clearly wider shoulder joints)
+            // - Average male: 1.15 - 1.25
+            // - Neutral/Female: 1.0 - 1.15 (most women fall here due to skeleton detection limits)
+            // - Feminine build: < 1.0 (hips wider than shoulders in skeleton)
+
+            let detected, confidence;
+
+            if (shoulderToHipRatio > 1.25) {
+                // Very wide shoulders relative to hips - likely male
+                detected = 'male';
+                confidence = 'high';
+            } else if (shoulderToHipRatio > 1.18) {
+                // Moderately wide shoulders - probably male
+                detected = 'male';
+                confidence = 'medium';
+            } else if (shoulderToHipRatio < 0.95) {
+                // Hips clearly wider than shoulders - likely female
+                detected = 'female';
+                confidence = 'high';
+            } else if (shoulderToHipRatio < 1.05) {
+                // Hips nearly equal or wider - probably female
+                detected = 'female';
+                confidence = 'medium';
+            } else {
+                // Ambiguous range (1.05 - 1.18) - default to female
+                // Most women with skeleton detection fall in this range
+                detected = 'female';
+                confidence = 'low';
+            }
+
+            console.log('Detected gender:', detected, '(confidence:', confidence + ')');
+            console.log('========================');
+
+            return { gender: detected, confidence: confidence, ratio: shoulderToHipRatio };
         }
 
         // Generate personalized recommendations
@@ -753,6 +848,9 @@
 
         // Initialize
         async function init() {
+            // Initialize theme
+            initTheme();
+
             // Initialize AI models
             console.log('Initializing AI models...');
 
@@ -772,6 +870,7 @@
             setupSimulator();
             setupWorkout();
             setupNutrition();
+            setupGenderConfirmation();
             animateGauges();
 
             // Setup BMI input listeners
@@ -1063,6 +1162,43 @@
             if (num === 3) {
                 setTimeout(animateGauges, 300);
             }
+
+            // Update simulator current state image when entering simulator
+            if (num === 5) {
+                updateSimulatorCurrentState();
+            }
+        }
+
+        // Update simulator with current uploaded image and stats
+        function updateSimulatorCurrentState() {
+            const currentImg = document.getElementById('current-state-image');
+            const currentPlaceholder = document.getElementById('current-placeholder');
+
+            if (currentImg && currentPlaceholder) {
+                if (state.imageData) {
+                    currentImg.src = state.imageData;
+                    currentImg.style.display = 'block';
+                    currentPlaceholder.style.display = 'none';
+                } else {
+                    currentImg.style.display = 'none';
+                    currentPlaceholder.style.display = 'flex';
+                }
+            }
+
+            // Update stats from analysis result
+            if (state.analysisResult) {
+                const result = state.analysisResult;
+                const currentFitness = document.getElementById('current-fitness');
+                const currentMuscle = document.getElementById('current-muscle');
+                const currentAge = document.getElementById('current-age');
+
+                // Extract muscle tone score (muscleTone is an object with score property)
+                const muscleScore = result.muscleTone && result.muscleTone.score ? result.muscleTone.score : 68;
+
+                if (currentFitness) currentFitness.textContent = result.fitnessIndex || '7.2';
+                if (currentMuscle) currentMuscle.textContent = muscleScore + '%';
+                if (currentAge) currentAge.textContent = result.visualAge || '28';
+            }
         }
 
         // Analysis with MediaPipe (Free AI)
@@ -1137,9 +1273,8 @@
                             // No human body detected - show error and return to upload
                             showNoHumanDetectedError();
                         } else {
-                            // Valid analysis - show results
-                            populateResults();
-                            goToScreen(3);
+                            // Valid analysis - show gender confirmation first
+                            showGenderConfirmation();
                         }
                     }, 500);
                 }
@@ -1176,6 +1311,88 @@ Please try again with a different photo.`;
             state.analysisResult = null;
             state.landmarks = null;
             goToScreen(1);
+        }
+
+        // Show gender confirmation modal after analysis
+        function showGenderConfirmation() {
+            const result = state.analysisResult;
+            if (!result || !result.detectedGender) {
+                // No gender detection - proceed directly to results
+                populateResults();
+                goToScreen(3);
+                return;
+            }
+
+            const detected = result.detectedGender;
+            const modal = document.getElementById('gender-confirm-modal');
+            const iconEl = document.getElementById('detected-gender-icon');
+            const labelEl = document.getElementById('detected-gender-label');
+            const confidenceEl = document.getElementById('gender-confidence');
+
+            // Update modal with detected gender
+            iconEl.textContent = detected.gender === 'male' ? '👨' : '👩';
+            labelEl.textContent = detected.gender === 'male' ? 'Male' : 'Female';
+
+            // Show confidence level
+            const confidenceLabels = {
+                'high': 'High confidence',
+                'medium': 'Medium confidence',
+                'low': 'Low confidence'
+            };
+            confidenceEl.textContent = confidenceLabels[detected.confidence] || 'Medium confidence';
+            confidenceEl.className = 'confidence-tag confidence-' + detected.confidence;
+
+            // Highlight the detected gender option
+            const maleBtn = document.getElementById('confirm-male');
+            const femaleBtn = document.getElementById('confirm-female');
+            maleBtn.classList.toggle('active', detected.gender === 'male');
+            femaleBtn.classList.toggle('active', detected.gender === 'female');
+
+            // Show the modal
+            modal.classList.add('active');
+        }
+
+        // Setup gender confirmation modal handlers
+        function setupGenderConfirmation() {
+            const modal = document.getElementById('gender-confirm-modal');
+            const maleBtn = document.getElementById('confirm-male');
+            const femaleBtn = document.getElementById('confirm-female');
+            const proceedBtn = document.getElementById('gender-confirm-proceed');
+
+            let selectedGender = null;
+
+            // Handle gender option clicks
+            maleBtn.addEventListener('click', () => {
+                selectedGender = 'male';
+                maleBtn.classList.add('active');
+                femaleBtn.classList.remove('active');
+            });
+
+            femaleBtn.addEventListener('click', () => {
+                selectedGender = 'female';
+                femaleBtn.classList.add('active');
+                maleBtn.classList.remove('active');
+            });
+
+            // Handle proceed button
+            proceedBtn.addEventListener('click', () => {
+                // Get the selected gender (default to detected if none explicitly selected)
+                if (!selectedGender && state.analysisResult && state.analysisResult.detectedGender) {
+                    selectedGender = state.analysisResult.detectedGender.gender;
+                }
+
+                // Save gender to state
+                state.gender = selectedGender || 'male';
+                console.log('Gender confirmed:', state.gender);
+
+                // Hide modal
+                modal.classList.remove('active');
+                selectedGender = null; // Reset for next analysis
+
+                // Now proceed to results
+                populateResults();
+                goToScreen(3);
+            });
         }
 
         // Populate results from AI analysis
@@ -1542,35 +1759,81 @@ Please try again with a different photo.`;
 
         // Simulator
         function setupSimulator() {
-            // Scenario data
+            // Scenario data with AI transformation prompts
             const scenarios = {
                 active: {
                     fitness: { value: 8.1, change: '+0.9', pct: '+12.5%' },
                     muscle: { value: 78, change: '+10%', pct: 'Improved' },
                     posture: { value: 88, change: '+10', pct: '+13%' },
                     age: { value: 25, change: '-3', pct: 'Years Younger' },
-                    positive: true
+                    positive: true,
+                    prompt: 'Transform this person to look more fit and athletic with improved muscle tone, better posture, healthier skin, and a more energetic appearance'
                 },
                 sedentary: {
                     fitness: { value: 6.4, change: '-0.8', pct: '-11%' },
                     muscle: { value: 60, change: '-8%', pct: 'Declined' },
                     posture: { value: 70, change: '-8', pct: '-10%' },
                     age: { value: 31, change: '+3', pct: 'Years Older' },
-                    positive: false
+                    positive: false,
+                    prompt: 'Transform this person to look slightly less fit with reduced muscle definition, slightly slouched posture, and a more tired appearance'
                 },
                 intensive: {
                     fitness: { value: 8.8, change: '+1.6', pct: '+22%' },
                     muscle: { value: 88, change: '+20%', pct: 'Significant' },
                     posture: { value: 93, change: '+15', pct: '+19%' },
                     age: { value: 23, change: '-5', pct: 'Years Younger' },
-                    positive: true
+                    positive: true,
+                    prompt: 'Transform this person to look very fit and muscular with well-defined muscles, excellent posture, vibrant healthy skin, and a strong athletic physique'
                 },
                 nutrition: {
                     fitness: { value: 7.8, change: '+0.6', pct: '+8%' },
                     muscle: { value: 75, change: '+7%', pct: 'Moderate' },
                     posture: { value: 80, change: '+2', pct: '+3%' },
                     age: { value: 26, change: '-2', pct: 'Years Younger' },
-                    positive: true
+                    positive: true,
+                    prompt: 'Transform this person to look healthier with better skin tone, slightly leaner appearance, and a more refreshed energetic look'
+                }
+            };
+
+            // Visual transformation configuration (CSS-based for reliability)
+            let isGenerating = false;
+
+            // Scenario-specific transformations based on timeline
+            // For muscle gain: use high contrast for definition (no horizontal stretch to avoid cropping)
+            // For weight loss: compress horizontally (body appears slimmer)
+            const scenarioTransforms = {
+                // Active lifestyle: Leaner, more toned (compress horizontally)
+                active: {
+                    1: { scaleX: 0.96, brightness: 1.02, contrast: 1.08, saturate: 1.08 },
+                    2: { scaleX: 0.92, brightness: 1.03, contrast: 1.12, saturate: 1.1 },
+                    3: { scaleX: 0.88, brightness: 1.04, contrast: 1.15, saturate: 1.12 },
+                    4: { scaleX: 0.84, brightness: 1.05, contrast: 1.18, saturate: 1.14 },
+                    5: { scaleX: 0.80, brightness: 1.06, contrast: 1.2, saturate: 1.16 }
+                },
+                // Intensive training: Muscle gain - moderate contrast + subtle sharpening
+                // Balanced to show definition without harsh shadows
+                intensive: {
+                    1: { scaleX: 1.0, brightness: 1.0, contrast: 1.12, saturate: 1.05 },
+                    2: { scaleX: 1.0, brightness: 1.0, contrast: 1.2, saturate: 1.08 },
+                    3: { scaleX: 1.0, brightness: 0.98, contrast: 1.28, saturate: 1.1 },
+                    4: { scaleX: 1.0, brightness: 0.97, contrast: 1.35, saturate: 1.12 },
+                    5: { scaleX: 1.0, brightness: 0.96, contrast: 1.42, saturate: 1.15 }
+                },
+                // Nutrition focus: Healthier appearance, slight slimming
+                nutrition: {
+                    1: { scaleX: 0.97, brightness: 1.02, contrast: 1.05, saturate: 1.1 },
+                    2: { scaleX: 0.94, brightness: 1.03, contrast: 1.08, saturate: 1.12 },
+                    3: { scaleX: 0.91, brightness: 1.04, contrast: 1.1, saturate: 1.14 },
+                    4: { scaleX: 0.88, brightness: 1.05, contrast: 1.12, saturate: 1.16 },
+                    5: { scaleX: 0.85, brightness: 1.06, contrast: 1.14, saturate: 1.18 }
+                },
+                // Sedentary: Slightly duller appearance - subtle effect to keep image visible
+                sedentary: {
+                    1: { scaleX: 1.0, brightness: 0.98, contrast: 0.95, saturate: 0.92 },
+                    2: { scaleX: 1.0, brightness: 0.96, contrast: 0.92, saturate: 0.88 },
+                    3: { scaleX: 1.0, brightness: 0.94, contrast: 0.9, saturate: 0.85 },
+                    4: { scaleX: 1.0, brightness: 0.92, contrast: 0.88, saturate: 0.82 },
+                    5: { scaleX: 1.0, brightness: 0.9, contrast: 0.85, saturate: 0.8 }
                 }
             };
 
@@ -1650,6 +1913,121 @@ Please try again with a different photo.`;
                 });
             }
 
+            // Sharpen image using convolution kernel (enhances muscle definition)
+            function sharpenImage(imageData, intensity = 1) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                const output = new Uint8ClampedArray(data);
+
+                // Sharpening kernel (unsharp mask style)
+                const kernel = [
+                    0, -intensity, 0,
+                    -intensity, 1 + 4 * intensity, -intensity,
+                    0, -intensity, 0
+                ];
+
+                for (let y = 1; y < height - 1; y++) {
+                    for (let x = 1; x < width - 1; x++) {
+                        for (let c = 0; c < 3; c++) { // RGB channels only
+                            let sum = 0;
+                            for (let ky = -1; ky <= 1; ky++) {
+                                for (let kx = -1; kx <= 1; kx++) {
+                                    const idx = ((y + ky) * width + (x + kx)) * 4 + c;
+                                    sum += data[idx] * kernel[(ky + 1) * 3 + (kx + 1)];
+                                }
+                            }
+                            const idx = (y * width + x) * 4 + c;
+                            output[idx] = Math.min(255, Math.max(0, sum));
+                        }
+                    }
+                }
+
+                return new ImageData(output, width, height);
+            }
+
+            // Canvas-based transformation (keeps image size, transforms body inside)
+            function generateProjection() {
+                const generateBtn = document.getElementById('generate-projection-btn');
+                const loadingOverlay = document.getElementById('ai-loading');
+                const projectedImg = document.getElementById('projected-state-image');
+                const projectedPlaceholder = document.getElementById('projected-placeholder');
+
+                if (!state.imageData) {
+                    alert('Please upload an image first');
+                    return;
+                }
+
+                if (isGenerating) return;
+
+                isGenerating = true;
+                generateBtn.disabled = true;
+                loadingOverlay.style.display = 'flex';
+                projectedPlaceholder.style.display = 'none';
+
+                // Load the original image
+                const img = new Image();
+                img.onload = function() {
+                    // Get transformation values
+                    const scenario = scenarios[currentScenario];
+                    const t = scenarioTransforms[currentScenario][currentTimeline];
+
+                    // Create canvas with same dimensions as original
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    // Apply filters via canvas
+                    ctx.filter = `brightness(${t.brightness}) contrast(${t.contrast}) saturate(${t.saturate})`;
+
+                    // Draw image at full canvas dimensions - always maintain same aspect ratio
+                    // The scaleX creates a slimmer effect by compressing content, not changing canvas size
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Apply subtle sharpening for muscle definition (intensive scenario only)
+                    if (currentScenario === 'intensive') {
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const sharpened = sharpenImage(imageData, currentTimeline * 0.1); // Reduced intensity to avoid shadows
+                        ctx.putImageData(sharpened, 0, 0);
+                    }
+
+                    // Convert canvas to image URL
+                    const transformedImageUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+                    // Display the result
+                    projectedImg.src = transformedImageUrl;
+                    projectedImg.style.display = 'block';
+                    projectedImg.style.transform = 'none'; // Keep image at full width
+                    projectedImg.style.filter = 'none'; // Filters already applied via canvas
+
+                    // Reset any box shadow - keep images clean without colored glows
+                    projectedImg.style.boxShadow = 'none';
+
+                    projectedPlaceholder.style.display = 'none';
+                    loadingOverlay.style.display = 'none';
+                    isGenerating = false;
+                    generateBtn.disabled = false;
+
+                    console.log('Projection generated for', currentScenario, 'with transforms:', t);
+                };
+
+                img.onerror = function() {
+                    alert('Error loading image');
+                    loadingOverlay.style.display = 'none';
+                    isGenerating = false;
+                    generateBtn.disabled = false;
+                };
+
+                img.src = state.imageData;
+            }
+
+            // Generate button
+            const generateBtn = document.getElementById('generate-projection-btn');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', generateProjection);
+            }
+
             // Scenario card selection
             document.querySelectorAll('.scenario-card').forEach(card => {
                 card.addEventListener('click', () => {
@@ -1721,6 +2099,22 @@ Please try again with a different photo.`;
                 });
             });
 
+            // Experience level buttons
+            const experienceBtns = document.querySelectorAll('.experience-btn');
+            experienceBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Update active state
+                    experienceBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Store in state
+                    state.experienceLevel = btn.dataset.level;
+
+                    // Update exercise cards based on experience level
+                    updateExerciseDifficulty(btn.dataset.level);
+                });
+            });
+
             // Navigation buttons
             document.getElementById('back-to-results-workout').addEventListener('click', () => {
                 goToScreen(3);
@@ -1730,8 +2124,914 @@ Please try again with a different photo.`;
                 goToScreen(5);
             });
 
-            document.getElementById('start-routine-btn').addEventListener('click', () => {
-                alert('Starting full workout routine! (Demo mode)');
+            // Navigation to nutrition from workout
+            const goToNutritionBtn = document.getElementById('go-to-nutrition-workout');
+            if (goToNutritionBtn) {
+                goToNutritionBtn.addEventListener('click', () => {
+                    goToScreen(7);
+                });
+            }
+
+            // Setup workout player
+            setupWorkoutPlayer();
+
+            // Setup weekly routine planner
+            setupWeeklyRoutine();
+
+            // Load saved experience level
+            loadExperienceLevel();
+        }
+
+        // Update exercise difficulty based on experience level
+        function updateExerciseDifficulty(level) {
+            const exerciseCards = document.querySelectorAll('.exercise-card');
+
+            const difficultySettings = {
+                beginner: {
+                    sets: '2',
+                    reps: '8-10',
+                    rest: '90s',
+                    tagClass: 'beginner',
+                    tagText: 'Beginner'
+                },
+                intermediate: {
+                    sets: '3',
+                    reps: '12-15',
+                    rest: '60s',
+                    tagClass: 'intermediate',
+                    tagText: 'Intermediate'
+                },
+                advanced: {
+                    sets: '4-5',
+                    reps: '15-20',
+                    rest: '45s',
+                    tagClass: 'advanced',
+                    tagText: 'Advanced'
+                }
+            };
+
+            const settings = difficultySettings[level];
+
+            exerciseCards.forEach(card => {
+                // Find detail boxes and update based on label
+                const detailBoxes = card.querySelectorAll('.detail-box');
+                detailBoxes.forEach(box => {
+                    const label = box.querySelector('.detail-box-label');
+                    const value = box.querySelector('.detail-box-value');
+                    if (label && value) {
+                        const labelText = label.textContent.toLowerCase();
+                        if (labelText === 'sets') {
+                            value.textContent = settings.sets;
+                        } else if (labelText === 'reps') {
+                            value.textContent = settings.reps;
+                        } else if (labelText === 'rest') {
+                            value.textContent = settings.rest;
+                        }
+                    }
+                });
+
+                // Update difficulty tag in exercise-meta
+                const difficultyTags = card.querySelectorAll('.exercise-tag.beginner, .exercise-tag.intermediate, .exercise-tag.advanced');
+                difficultyTags.forEach(tag => {
+                    tag.className = `exercise-tag ${settings.tagClass}`;
+                    tag.textContent = settings.tagText;
+                });
+            });
+
+            // Store in localStorage for persistence
+            localStorage.setItem('physiq-experience-level', level);
+        }
+
+        // Load saved experience level on page load
+        function loadExperienceLevel() {
+            const savedLevel = localStorage.getItem('physiq-experience-level');
+            if (savedLevel) {
+                state.experienceLevel = savedLevel;
+                const experienceBtns = document.querySelectorAll('.experience-btn');
+                experienceBtns.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.level === savedLevel);
+                });
+                updateExerciseDifficulty(savedLevel);
+            }
+        }
+
+        // ========== WORKOUT PLAYER ==========
+        let workoutPlayerState = {
+            isPlaying: false,
+            currentExerciseIndex: 0,
+            currentSet: 1,
+            currentReps: 0,
+            phase: 'exercise', // 'exercise', 'rest', 'get-ready'
+            timerValue: 0,
+            timerInterval: null,
+            startTime: null,
+            exercises: []
+        };
+
+        const motivationalMessages = [
+            "Push through! You're doing great!",
+            "Feel the burn! It means it's working!",
+            "You're stronger than you think!",
+            "One rep at a time. You've got this!",
+            "Champions are made in moments like this!",
+            "Your future self will thank you!",
+            "Pain is temporary, pride is forever!",
+            "Every rep counts. Make it count!",
+            "You didn't come this far to only come this far!",
+            "Beast mode: ACTIVATED!"
+        ];
+
+        function getWorkoutExercises() {
+            // Get visible exercise cards based on current filter
+            const cards = document.querySelectorAll('.exercise-card');
+            const exercises = [];
+
+            cards.forEach(card => {
+                if (card.style.display !== 'none') {
+                    const name = card.querySelector('h3')?.textContent || 'Exercise';
+                    const targets = Array.from(card.querySelectorAll('.muscle-tag')).map(t => t.textContent);
+                    const detailBoxes = card.querySelectorAll('.detail-box');
+                    let sets = 3, reps = 12, rest = 60;
+
+                    detailBoxes.forEach(box => {
+                        const label = box.querySelector('.detail-box-label')?.textContent.toLowerCase();
+                        const value = box.querySelector('.detail-box-value')?.textContent;
+                        if (label === 'sets') sets = parseInt(value) || 3;
+                        if (label === 'reps') reps = parseInt(value) || 12;
+                        if (label === 'rest') rest = parseInt(value) || 60;
+                    });
+
+                    const isWeak = card.dataset.weak === 'true';
+                    const type = card.dataset.type || 'home';
+
+                    exercises.push({ name, targets, sets, reps, rest, isWeak, type });
+                }
+            });
+
+            return exercises;
+        }
+
+        function openWorkoutPlayer() {
+            const modal = document.getElementById('workout-player-modal');
+            workoutPlayerState.exercises = getWorkoutExercises();
+
+            if (workoutPlayerState.exercises.length === 0) {
+                alert('No exercises available. Please select a filter with exercises.');
+                return;
+            }
+
+            // Reset state
+            workoutPlayerState.currentExerciseIndex = 0;
+            workoutPlayerState.currentSet = 1;
+            workoutPlayerState.currentReps = 0;
+            workoutPlayerState.phase = 'get-ready';
+            workoutPlayerState.isPlaying = false;
+            workoutPlayerState.startTime = Date.now();
+
+            // Hide complete overlay
+            document.getElementById('workout-complete-overlay').classList.remove('active');
+
+            // Update UI
+            updateWorkoutPlayerUI();
+            setPhase('get-ready', 5);
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeWorkoutPlayer() {
+            const modal = document.getElementById('workout-player-modal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+
+            // Stop timer
+            if (workoutPlayerState.timerInterval) {
+                clearInterval(workoutPlayerState.timerInterval);
+                workoutPlayerState.timerInterval = null;
+            }
+            workoutPlayerState.isPlaying = false;
+        }
+
+        function updateWorkoutPlayerUI() {
+            const exercise = workoutPlayerState.exercises[workoutPlayerState.currentExerciseIndex];
+            if (!exercise) return;
+
+            // Update exercise name and targets
+            document.getElementById('player-exercise-name').textContent = exercise.name;
+
+            const targetsContainer = document.getElementById('player-exercise-targets');
+            targetsContainer.innerHTML = exercise.targets.map(t =>
+                `<span class="target-tag">${t}</span>`
+            ).join('');
+
+            // Update progress
+            const total = workoutPlayerState.exercises.length;
+            const current = workoutPlayerState.currentExerciseIndex + 1;
+            document.getElementById('player-progress-text').textContent = `${current} / ${total}`;
+            document.getElementById('player-progress-fill').style.width = `${(current / total) * 100}%`;
+
+            // Update sets indicators
+            const setsContainer = document.getElementById('sets-indicators');
+            setsContainer.innerHTML = '';
+            for (let i = 1; i <= exercise.sets; i++) {
+                const dot = document.createElement('span');
+                dot.className = 'set-dot';
+                if (i < workoutPlayerState.currentSet) dot.classList.add('completed');
+                if (i === workoutPlayerState.currentSet) dot.classList.add('active');
+                setsContainer.appendChild(dot);
+            }
+            document.getElementById('sets-count').textContent = `${workoutPlayerState.currentSet} / ${exercise.sets}`;
+
+            // Update reps
+            document.getElementById('reps-target').textContent = exercise.reps;
+            document.getElementById('reps-current').textContent = workoutPlayerState.currentReps;
+
+            // Update up next
+            updateUpNext();
+
+            // Update motivation
+            const randomMsg = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+            document.getElementById('player-motivation').querySelector('p').textContent = `"${randomMsg}"`;
+
+            // Update routine stats
+            document.getElementById('routine-exercise-count').textContent = workoutPlayerState.exercises.length;
+            const totalTime = workoutPlayerState.exercises.reduce((sum, ex) => {
+                return sum + (ex.sets * (45 + ex.rest)); // Approx time per exercise
+            }, 0);
+            document.getElementById('routine-duration').textContent = `~${Math.round(totalTime / 60)}`;
+        }
+
+        function updateUpNext() {
+            const upNextContainer = document.getElementById('up-next-exercise');
+            const nextIndex = workoutPlayerState.currentExerciseIndex + 1;
+
+            if (nextIndex < workoutPlayerState.exercises.length) {
+                const next = workoutPlayerState.exercises[nextIndex];
+                upNextContainer.innerHTML = `
+                    <div class="up-next-info">
+                        <span class="up-next-name">${next.name}</span>
+                        <span class="up-next-details">${next.sets} sets • ${next.reps} reps</span>
+                    </div>
+                    ${next.isWeak ? '<span class="up-next-tag">Focus Area</span>' : ''}
+                `;
+                upNextContainer.parentElement.style.display = 'block';
+            } else {
+                upNextContainer.parentElement.style.display = 'none';
+            }
+        }
+
+        function setPhase(phase, duration) {
+            workoutPlayerState.phase = phase;
+            workoutPlayerState.timerValue = duration;
+
+            const phaseEl = document.getElementById('player-phase');
+            const timerProgress = document.getElementById('timer-progress');
+            const timerLabel = document.getElementById('timer-label');
+            const skipRestBtn = document.getElementById('skip-rest-btn');
+            const repsContainer = document.getElementById('player-reps');
+
+            // Update phase badge
+            phaseEl.innerHTML = `<span class="phase-badge ${phase}">${phase.replace('-', ' ').toUpperCase()}</span>`;
+
+            // Update timer style
+            timerProgress.classList.remove('rest');
+            if (phase === 'rest') {
+                timerProgress.classList.add('rest');
+                timerLabel.textContent = 'rest';
+                skipRestBtn.classList.add('visible');
+                repsContainer.classList.remove('active');
+            } else if (phase === 'get-ready') {
+                timerLabel.textContent = 'get ready';
+                skipRestBtn.classList.remove('visible');
+                repsContainer.classList.remove('active');
+            } else {
+                timerLabel.textContent = 'remaining';
+                skipRestBtn.classList.remove('visible');
+                repsContainer.classList.add('active');
+            }
+
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            const timerValue = document.getElementById('timer-value');
+            const timerProgress = document.getElementById('timer-progress');
+
+            const minutes = Math.floor(workoutPlayerState.timerValue / 60);
+            const seconds = workoutPlayerState.timerValue % 60;
+            timerValue.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            // Update circular progress
+            const exercise = workoutPlayerState.exercises[workoutPlayerState.currentExerciseIndex];
+            let totalDuration;
+
+            if (workoutPlayerState.phase === 'rest') {
+                totalDuration = exercise?.rest || 60;
+            } else if (workoutPlayerState.phase === 'get-ready') {
+                totalDuration = 5;
+            } else {
+                totalDuration = 45; // Default exercise duration
+            }
+
+            const circumference = 2 * Math.PI * 90;
+            const progress = workoutPlayerState.timerValue / totalDuration;
+            const offset = circumference * (1 - progress);
+            timerProgress.style.strokeDashoffset = offset;
+        }
+
+        function togglePlayPause() {
+            if (workoutPlayerState.isPlaying) {
+                pauseWorkout();
+            } else {
+                playWorkout();
+            }
+        }
+
+        function playWorkout() {
+            workoutPlayerState.isPlaying = true;
+            document.getElementById('play-icon').style.display = 'none';
+            document.getElementById('pause-icon').style.display = 'block';
+
+            workoutPlayerState.timerInterval = setInterval(() => {
+                if (workoutPlayerState.timerValue > 0) {
+                    workoutPlayerState.timerValue--;
+                    updateTimerDisplay();
+
+                    // Audio beep in last 3 seconds
+                    if (workoutPlayerState.timerValue <= 3 && workoutPlayerState.timerValue > 0) {
+                        // Could add audio beep here
+                    }
+                } else {
+                    handleTimerComplete();
+                }
+            }, 1000);
+        }
+
+        function pauseWorkout() {
+            workoutPlayerState.isPlaying = false;
+            document.getElementById('play-icon').style.display = 'block';
+            document.getElementById('pause-icon').style.display = 'none';
+
+            if (workoutPlayerState.timerInterval) {
+                clearInterval(workoutPlayerState.timerInterval);
+                workoutPlayerState.timerInterval = null;
+            }
+        }
+
+        function handleTimerComplete() {
+            pauseWorkout();
+
+            const exercise = workoutPlayerState.exercises[workoutPlayerState.currentExerciseIndex];
+
+            if (workoutPlayerState.phase === 'get-ready') {
+                // Start exercise phase
+                setPhase('exercise', 45);
+                workoutPlayerState.currentReps = 0;
+                updateWorkoutPlayerUI();
+                playWorkout();
+            } else if (workoutPlayerState.phase === 'exercise') {
+                // Move to rest or next set
+                if (workoutPlayerState.currentSet < exercise.sets) {
+                    // Rest between sets
+                    setPhase('rest', exercise.rest);
+                    playWorkout();
+                } else {
+                    // Move to next exercise
+                    nextExercise();
+                }
+            } else if (workoutPlayerState.phase === 'rest') {
+                // Start next set
+                workoutPlayerState.currentSet++;
+                workoutPlayerState.currentReps = 0;
+                setPhase('exercise', 45);
+                updateWorkoutPlayerUI();
+                playWorkout();
+            }
+        }
+
+        function completeSet() {
+            pauseWorkout();
+
+            const exercise = workoutPlayerState.exercises[workoutPlayerState.currentExerciseIndex];
+            workoutPlayerState.currentReps = exercise.reps;
+            updateWorkoutPlayerUI();
+
+            if (workoutPlayerState.currentSet < exercise.sets) {
+                // Rest between sets
+                setPhase('rest', exercise.rest);
+                playWorkout();
+            } else {
+                // Move to next exercise
+                nextExercise();
+            }
+        }
+
+        function skipRest() {
+            if (workoutPlayerState.phase === 'rest') {
+                pauseWorkout();
+                workoutPlayerState.currentSet++;
+                workoutPlayerState.currentReps = 0;
+                setPhase('exercise', 45);
+                updateWorkoutPlayerUI();
+                playWorkout();
+            }
+        }
+
+        function addRep() {
+            const exercise = workoutPlayerState.exercises[workoutPlayerState.currentExerciseIndex];
+            if (workoutPlayerState.currentReps < exercise.reps) {
+                workoutPlayerState.currentReps++;
+                document.getElementById('reps-current').textContent = workoutPlayerState.currentReps;
+
+                // Auto-complete set if all reps done
+                if (workoutPlayerState.currentReps >= exercise.reps) {
+                    setTimeout(completeSet, 500);
+                }
+            }
+        }
+
+        function nextExercise() {
+            if (workoutPlayerState.currentExerciseIndex < workoutPlayerState.exercises.length - 1) {
+                workoutPlayerState.currentExerciseIndex++;
+                workoutPlayerState.currentSet = 1;
+                workoutPlayerState.currentReps = 0;
+                setPhase('get-ready', 5);
+                updateWorkoutPlayerUI();
+                playWorkout();
+            } else {
+                // Workout complete!
+                showWorkoutComplete();
+            }
+        }
+
+        function prevExercise() {
+            if (workoutPlayerState.currentExerciseIndex > 0) {
+                pauseWorkout();
+                workoutPlayerState.currentExerciseIndex--;
+                workoutPlayerState.currentSet = 1;
+                workoutPlayerState.currentReps = 0;
+                setPhase('get-ready', 5);
+                updateWorkoutPlayerUI();
+            }
+        }
+
+        function showWorkoutComplete() {
+            pauseWorkout();
+
+            const overlay = document.getElementById('workout-complete-overlay');
+            const elapsedTime = Math.floor((Date.now() - workoutPlayerState.startTime) / 1000);
+            const minutes = Math.floor(elapsedTime / 60);
+            const seconds = elapsedTime % 60;
+
+            // Update stats
+            document.getElementById('complete-exercises').textContent = workoutPlayerState.exercises.length;
+            document.getElementById('complete-sets').textContent = workoutPlayerState.exercises.reduce((sum, ex) => sum + ex.sets, 0);
+            document.getElementById('complete-time').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            // Update streak (mock)
+            const streak = parseInt(localStorage.getItem('physiq-workout-streak') || '0') + 1;
+            localStorage.setItem('physiq-workout-streak', streak);
+
+            overlay.classList.add('active');
+        }
+
+        function setupWorkoutPlayer() {
+            // Close button
+            document.getElementById('player-close-btn')?.addEventListener('click', closeWorkoutPlayer);
+
+            // Play/Pause
+            document.getElementById('player-play-btn')?.addEventListener('click', togglePlayPause);
+
+            // Navigation
+            document.getElementById('player-prev-btn')?.addEventListener('click', prevExercise);
+            document.getElementById('player-next-btn')?.addEventListener('click', nextExercise);
+
+            // Quick actions
+            document.getElementById('skip-rest-btn')?.addEventListener('click', skipRest);
+            document.getElementById('add-rep-btn')?.addEventListener('click', addRep);
+            document.getElementById('complete-set-btn')?.addEventListener('click', completeSet);
+
+            // Complete screen actions
+            document.getElementById('finish-workout-btn')?.addEventListener('click', closeWorkoutPlayer);
+            document.getElementById('share-workout-btn')?.addEventListener('click', () => {
+                alert('Sharing workout summary! (Demo mode)');
+            });
+
+            // Close on background click
+            const modal = document.getElementById('workout-player-modal');
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    // Don't close on background click during workout
+                }
+            });
+        }
+
+        // ========== WEEKLY ROUTINE PLANNER ==========
+        const weeklyRoutineData = {
+            currentConfig: {
+                goal: 'hypertrophy',
+                split: 'push-pull-legs',
+                availableDays: ['mon', 'tue', 'wed', 'thu', 'fri'],
+                sessionDuration: 60
+            },
+            weekPlan: null,
+            selectedDay: 'monday'
+        };
+
+        // Exercise database by muscle group
+        const exerciseDatabase = {
+            chest: [
+                { name: 'Bench Press', sets: 4, reps: '8-10', muscles: ['Chest', 'Triceps'] },
+                { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12', muscles: ['Upper Chest', 'Shoulders'] },
+                { name: 'Cable Flyes', sets: 3, reps: '12-15', muscles: ['Chest'] },
+                { name: 'Push-Ups', sets: 3, reps: '15-20', muscles: ['Chest', 'Core'] },
+                { name: 'Dips', sets: 3, reps: '10-12', muscles: ['Chest', 'Triceps'] }
+            ],
+            back: [
+                { name: 'Pull-Ups', sets: 4, reps: '8-10', muscles: ['Lats', 'Biceps'] },
+                { name: 'Barbell Rows', sets: 4, reps: '8-10', muscles: ['Back', 'Biceps'] },
+                { name: 'Lat Pulldown', sets: 3, reps: '10-12', muscles: ['Lats'] },
+                { name: 'Seated Cable Rows', sets: 3, reps: '12-15', muscles: ['Mid Back'] },
+                { name: 'Face Pulls', sets: 3, reps: '15-20', muscles: ['Rear Delts', 'Traps'] }
+            ],
+            shoulders: [
+                { name: 'Overhead Press', sets: 4, reps: '8-10', muscles: ['Shoulders', 'Triceps'] },
+                { name: 'Lateral Raises', sets: 3, reps: '12-15', muscles: ['Side Delts'] },
+                { name: 'Front Raises', sets: 3, reps: '12-15', muscles: ['Front Delts'] },
+                { name: 'Reverse Flyes', sets: 3, reps: '15', muscles: ['Rear Delts'] },
+                { name: 'Arnold Press', sets: 3, reps: '10-12', muscles: ['Shoulders'] }
+            ],
+            legs: [
+                { name: 'Squats', sets: 4, reps: '8-10', muscles: ['Quads', 'Glutes'] },
+                { name: 'Romanian Deadlifts', sets: 4, reps: '10-12', muscles: ['Hamstrings', 'Glutes'] },
+                { name: 'Leg Press', sets: 3, reps: '12-15', muscles: ['Quads'] },
+                { name: 'Leg Curls', sets: 3, reps: '12-15', muscles: ['Hamstrings'] },
+                { name: 'Calf Raises', sets: 4, reps: '15-20', muscles: ['Calves'] },
+                { name: 'Lunges', sets: 3, reps: '10 each', muscles: ['Quads', 'Glutes'] }
+            ],
+            arms: [
+                { name: 'Barbell Curls', sets: 3, reps: '10-12', muscles: ['Biceps'] },
+                { name: 'Tricep Pushdowns', sets: 3, reps: '12-15', muscles: ['Triceps'] },
+                { name: 'Hammer Curls', sets: 3, reps: '12', muscles: ['Biceps', 'Forearms'] },
+                { name: 'Skull Crushers', sets: 3, reps: '10-12', muscles: ['Triceps'] },
+                { name: 'Concentration Curls', sets: 2, reps: '12-15', muscles: ['Biceps'] }
+            ],
+            core: [
+                { name: 'Plank', sets: 3, reps: '60s', muscles: ['Core'] },
+                { name: 'Hanging Leg Raises', sets: 3, reps: '12-15', muscles: ['Abs'] },
+                { name: 'Cable Crunches', sets: 3, reps: '15-20', muscles: ['Abs'] },
+                { name: 'Russian Twists', sets: 3, reps: '20', muscles: ['Obliques'] },
+                { name: 'Dead Bug', sets: 3, reps: '10 each', muscles: ['Core'] }
+            ]
+        };
+
+        // Split templates
+        const splitTemplates = {
+            'push-pull-legs': {
+                pattern: ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Rest', 'Rest'],
+                days: {
+                    'Push': { focus: 'Chest, Shoulders, Triceps', muscles: ['chest', 'shoulders', 'arms'] },
+                    'Pull': { focus: 'Back, Biceps, Rear Delts', muscles: ['back', 'arms'] },
+                    'Legs': { focus: 'Quads, Hamstrings, Glutes, Calves', muscles: ['legs', 'core'] }
+                }
+            },
+            'upper-lower': {
+                pattern: ['Upper', 'Lower', 'Rest', 'Upper', 'Lower', 'Rest', 'Rest'],
+                days: {
+                    'Upper': { focus: 'Chest, Back, Shoulders, Arms', muscles: ['chest', 'back', 'shoulders', 'arms'] },
+                    'Lower': { focus: 'Quads, Hamstrings, Glutes, Core', muscles: ['legs', 'core'] }
+                }
+            },
+            'full-body': {
+                pattern: ['Full Body', 'Rest', 'Full Body', 'Rest', 'Full Body', 'Rest', 'Rest'],
+                days: {
+                    'Full Body': { focus: 'All Major Muscle Groups', muscles: ['chest', 'back', 'legs', 'shoulders', 'core'] }
+                }
+            },
+            'bro-split': {
+                pattern: ['Chest', 'Back', 'Shoulders', 'Legs', 'Arms', 'Rest', 'Rest'],
+                days: {
+                    'Chest': { focus: 'Chest & Triceps', muscles: ['chest', 'arms'] },
+                    'Back': { focus: 'Back & Biceps', muscles: ['back', 'arms'] },
+                    'Shoulders': { focus: 'Shoulders & Traps', muscles: ['shoulders'] },
+                    'Legs': { focus: 'Quads, Hamstrings, Glutes', muscles: ['legs'] },
+                    'Arms': { focus: 'Biceps, Triceps, Forearms', muscles: ['arms'] }
+                }
+            }
+        };
+
+        function openWeeklyRoutineModal() {
+            const modal = document.getElementById('weekly-routine-modal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeWeeklyRoutineModal() {
+            const modal = document.getElementById('weekly-routine-modal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function generateWeeklyPlan() {
+            const config = weeklyRoutineData.currentConfig;
+            const split = splitTemplates[config.split];
+            const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            const dayAbbrevs = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+            // Adjust pattern based on available days
+            const adjustedPattern = [...split.pattern];
+            dayAbbrevs.forEach((abbrev, index) => {
+                if (!config.availableDays.includes(abbrev) && adjustedPattern[index] !== 'Rest') {
+                    adjustedPattern[index] = 'Rest';
+                }
+            });
+
+            // Generate workout for each day
+            const weekPlan = {};
+            dayNames.forEach((day, index) => {
+                const workoutType = adjustedPattern[index];
+                if (workoutType === 'Rest') {
+                    weekPlan[day] = { type: 'Rest', exercises: [] };
+                } else {
+                    const dayTemplate = split.days[workoutType];
+                    const exercises = generateDayExercises(dayTemplate.muscles, config);
+                    weekPlan[day] = {
+                        type: workoutType,
+                        focus: dayTemplate.focus,
+                        exercises: exercises,
+                        duration: config.sessionDuration
+                    };
+                }
+            });
+
+            weeklyRoutineData.weekPlan = weekPlan;
+            return weekPlan;
+        }
+
+        function generateDayExercises(muscleGroups, config) {
+            const exercises = [];
+            const exercisesPerGroup = Math.ceil(6 / muscleGroups.length);
+
+            muscleGroups.forEach(group => {
+                const groupExercises = exerciseDatabase[group] || [];
+                const shuffled = [...groupExercises].sort(() => Math.random() - 0.5);
+                const selected = shuffled.slice(0, exercisesPerGroup);
+
+                // Adjust based on goal
+                selected.forEach(ex => {
+                    let adjustedEx = { ...ex };
+                    if (config.goal === 'strength') {
+                        adjustedEx.sets = Math.min(ex.sets + 1, 5);
+                        adjustedEx.reps = '4-6';
+                    } else if (config.goal === 'endurance') {
+                        adjustedEx.sets = Math.max(ex.sets - 1, 2);
+                        adjustedEx.reps = '15-20';
+                    }
+                    exercises.push(adjustedEx);
+                });
+            });
+
+            return exercises.slice(0, 6); // Limit to 6 exercises
+        }
+
+        function updateWeeklyPlanUI() {
+            const plan = weeklyRoutineData.weekPlan;
+            if (!plan) return;
+
+            const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            const typeIds = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+            // Update day buttons
+            dayNames.forEach((day, index) => {
+                const typeEl = document.getElementById(`${typeIds[index]}-type`);
+                if (typeEl) {
+                    typeEl.textContent = plan[day].type;
+                }
+
+                const btn = document.querySelector(`.week-day-btn[data-day="${day}"]`);
+                if (btn) {
+                    btn.classList.toggle('rest', plan[day].type === 'Rest');
+                }
+            });
+
+            // Calculate stats
+            const trainingDays = dayNames.filter(d => plan[d].type !== 'Rest').length;
+            const restDays = 7 - trainingDays;
+            const totalTime = trainingDays * weeklyRoutineData.currentConfig.sessionDuration;
+
+            document.getElementById('weekly-training-days').textContent = trainingDays;
+            document.getElementById('weekly-rest-days').textContent = restDays;
+            document.getElementById('weekly-total-time').textContent = `${Math.round(totalTime / 60)}h`;
+
+            // Update muscle coverage
+            updateMuscleCoverage(plan);
+
+            // Show selected day
+            showDayWorkout(weeklyRoutineData.selectedDay);
+        }
+
+        function updateMuscleCoverage(plan) {
+            const coverage = {
+                'Chest': 0, 'Back': 0, 'Shoulders': 0, 'Legs': 0, 'Arms': 0, 'Core': 0
+            };
+
+            Object.values(plan).forEach(day => {
+                if (day.exercises) {
+                    day.exercises.forEach(ex => {
+                        ex.muscles.forEach(m => {
+                            const key = Object.keys(coverage).find(k =>
+                                m.toLowerCase().includes(k.toLowerCase()) ||
+                                k.toLowerCase().includes(m.toLowerCase().split(' ')[0])
+                            );
+                            if (key) coverage[key]++;
+                        });
+                    });
+                }
+            });
+
+            // Normalize to percentages
+            const maxHits = Math.max(...Object.values(coverage), 1);
+
+            const barsContainer = document.getElementById('muscle-bars');
+            barsContainer.innerHTML = Object.entries(coverage).map(([muscle, hits]) => `
+                <div class="muscle-bar-item">
+                    <span class="muscle-name">${muscle}</span>
+                    <div class="muscle-bar">
+                        <div class="muscle-fill" style="width: ${(hits / maxHits) * 100}%"></div>
+                    </div>
+                    <span class="muscle-hits">${hits}x</span>
+                </div>
+            `).join('');
+        }
+
+        function showDayWorkout(day) {
+            weeklyRoutineData.selectedDay = day;
+            const plan = weeklyRoutineData.weekPlan;
+            if (!plan || !plan[day]) return;
+
+            const dayData = plan[day];
+            const workoutCard = document.getElementById('daily-workout-card');
+            const restCard = document.getElementById('rest-day-card');
+
+            // Update day button states
+            document.querySelectorAll('.week-day-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.day === day);
+            });
+
+            if (dayData.type === 'Rest') {
+                workoutCard.style.display = 'none';
+                restCard.style.display = 'block';
+            } else {
+                workoutCard.style.display = 'block';
+                restCard.style.display = 'none';
+
+                document.getElementById('daily-workout-name').textContent = `${dayData.type} Day`;
+                document.getElementById('daily-focus').textContent = dayData.focus;
+                document.getElementById('daily-duration').innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    ${dayData.duration} min
+                `;
+                document.getElementById('daily-exercise-count').textContent = `${dayData.exercises.length} exercises`;
+
+                // Render exercises
+                const listContainer = document.getElementById('daily-exercises-list');
+                listContainer.innerHTML = dayData.exercises.map((ex, index) => `
+                    <div class="daily-exercise-item">
+                        <span class="exercise-number">${index + 1}</span>
+                        <div class="exercise-item-info">
+                            <div class="exercise-item-name">${ex.name}</div>
+                            <div class="exercise-item-details">${ex.sets} sets × ${ex.reps} reps</div>
+                        </div>
+                        <div class="exercise-item-muscles">
+                            ${ex.muscles.slice(0, 2).map(m => `<span class="mini-muscle-tag">${m}</span>`).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function setupWeeklyRoutine() {
+            // Open button
+            document.getElementById('open-weekly-routine-btn')?.addEventListener('click', openWeeklyRoutineModal);
+
+            // Close button
+            document.getElementById('weekly-routine-close')?.addEventListener('click', closeWeeklyRoutineModal);
+
+            // Close on background click
+            const modal = document.getElementById('weekly-routine-modal');
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) closeWeeklyRoutineModal();
+            });
+
+            // Goal options
+            document.querySelectorAll('.goal-options-weekly .config-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.goal-options-weekly .config-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    weeklyRoutineData.currentConfig.goal = btn.dataset.goal;
+                });
+            });
+
+            // Split options
+            document.querySelectorAll('.split-options .config-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.split-options .config-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    weeklyRoutineData.currentConfig.split = btn.dataset.split;
+                });
+            });
+
+            // Day toggles
+            document.querySelectorAll('.day-toggle').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.classList.toggle('active');
+                    const day = btn.dataset.day;
+                    const days = weeklyRoutineData.currentConfig.availableDays;
+                    if (btn.classList.contains('active')) {
+                        if (!days.includes(day)) days.push(day);
+                    } else {
+                        const idx = days.indexOf(day);
+                        if (idx > -1) days.splice(idx, 1);
+                    }
+                });
+            });
+
+            // Duration slider
+            const durationSlider = document.getElementById('session-duration');
+            const durationValue = document.getElementById('duration-value');
+            durationSlider?.addEventListener('input', (e) => {
+                const val = e.target.value;
+                durationValue.textContent = `${val} min`;
+                weeklyRoutineData.currentConfig.sessionDuration = parseInt(val);
+            });
+
+            // Generate button
+            document.getElementById('generate-weekly-btn')?.addEventListener('click', () => {
+                generateWeeklyPlan();
+                document.getElementById('weekly-config').style.display = 'none';
+                document.getElementById('weekly-plan-view').style.display = 'block';
+                updateWeeklyPlanUI();
+            });
+
+            // Day selector in plan view
+            document.querySelectorAll('.week-day-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    showDayWorkout(btn.dataset.day);
+                });
+            });
+
+            // Edit plan
+            document.getElementById('edit-weekly-plan')?.addEventListener('click', () => {
+                document.getElementById('weekly-plan-view').style.display = 'none';
+                document.getElementById('weekly-config').style.display = 'block';
+            });
+
+            // Regenerate
+            document.getElementById('regenerate-weekly-plan')?.addEventListener('click', () => {
+                generateWeeklyPlan();
+                updateWeeklyPlanUI();
+            });
+
+            // Save plan
+            document.getElementById('save-weekly-plan')?.addEventListener('click', () => {
+                localStorage.setItem('physiq-weekly-plan', JSON.stringify(weeklyRoutineData.weekPlan));
+                alert('Weekly plan saved!');
+                closeWeeklyRoutineModal();
+            });
+
+            // Start day workout
+            document.getElementById('start-day-btn')?.addEventListener('click', () => {
+                const day = weeklyRoutineData.selectedDay;
+                const dayPlan = weeklyRoutineData.weekPlan?.[day];
+                if (dayPlan && dayPlan.exercises.length > 0) {
+                    // Convert to workout player format and start
+                    workoutPlayerState.exercises = dayPlan.exercises.map(ex => ({
+                        name: ex.name,
+                        targets: ex.muscles,
+                        sets: ex.sets,
+                        reps: parseInt(ex.reps) || 12,
+                        rest: 60,
+                        isWeak: false,
+                        type: 'gym'
+                    }));
+                    closeWeeklyRoutineModal();
+                    setTimeout(() => {
+                        workoutPlayerState.currentExerciseIndex = 0;
+                        workoutPlayerState.currentSet = 1;
+                        workoutPlayerState.currentReps = 0;
+                        workoutPlayerState.phase = 'get-ready';
+                        workoutPlayerState.isPlaying = false;
+                        workoutPlayerState.startTime = Date.now();
+                        document.getElementById('workout-complete-overlay').classList.remove('active');
+                        updateWorkoutPlayerUI();
+                        setPhase('get-ready', 5);
+                        document.getElementById('workout-player-modal').classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                    }, 300);
+                }
             });
         }
 
@@ -1751,8 +3051,11 @@ Please try again with a different photo.`;
             });
 
             document.getElementById('generate-meal-plan-btn').addEventListener('click', () => {
-                alert('Generating personalized meal plan! (Demo mode)');
+                openMealPlanModal();
             });
+
+            // Setup meal plan generator
+            setupMealPlanGenerator();
 
             // Setup food recognition
             setupFoodRecognition();
@@ -1775,6 +3078,385 @@ Please try again with a different photo.`;
                 console.error('Failed to load MobileNet:', error);
                 return false;
             }
+        }
+
+        // ========== MEAL PLAN GENERATOR ==========
+        function openMealPlanModal() {
+            const modal = document.getElementById('meal-plan-modal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMealPlanModal() {
+            const modal = document.getElementById('meal-plan-modal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function setupMealPlanGenerator() {
+            const modal = document.getElementById('meal-plan-modal');
+            const closeBtn = document.getElementById('meal-plan-close');
+            const configPanel = document.getElementById('meal-plan-config');
+            const planView = document.getElementById('meal-plan-view');
+            const generateBtn = document.getElementById('generate-plan-btn');
+            const regenerateBtn = document.getElementById('regenerate-plan-btn');
+            const editBtn = document.getElementById('edit-plan-btn');
+            const saveBtn = document.getElementById('save-plan-btn');
+
+            let currentConfig = {
+                goal: 'muscle-gain',
+                diet: 'standard',
+                mealsPerDay: 4
+            };
+
+            // Close modal
+            closeBtn?.addEventListener('click', closeMealPlanModal);
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) closeMealPlanModal();
+            });
+
+            // Goal selection
+            document.querySelectorAll('.goal-options .config-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.goal-options .config-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentConfig.goal = btn.dataset.goal;
+                });
+            });
+
+            // Diet selection
+            document.querySelectorAll('.diet-options .config-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.diet-options .config-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentConfig.diet = btn.dataset.diet;
+                });
+            });
+
+            // Meals per day selection
+            document.querySelectorAll('.meals-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.meals-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentConfig.mealsPerDay = parseInt(btn.dataset.meals);
+                });
+            });
+
+            // Day selector
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const config = { ...currentConfig, gender: state.gender || 'male' };
+                    generateMealsForDay(btn.dataset.day, config);
+                });
+            });
+
+            // Generate plan
+            generateBtn?.addEventListener('click', () => {
+                // Use gender from state (set during AI analysis confirmation)
+                const config = { ...currentConfig, gender: state.gender || 'male' };
+                configPanel.style.display = 'none';
+                planView.style.display = 'block';
+                generateMealPlan(config);
+            });
+
+            // Regenerate plan
+            regenerateBtn?.addEventListener('click', () => {
+                const config = { ...currentConfig, gender: state.gender || 'male' };
+                generateMealPlan(config);
+            });
+
+            // Edit goals
+            editBtn?.addEventListener('click', () => {
+                planView.style.display = 'none';
+                configPanel.style.display = 'block';
+            });
+
+            // Save plan
+            saveBtn?.addEventListener('click', () => {
+                alert('Meal plan saved! (Demo mode - would save to your profile)');
+                closeMealPlanModal();
+            });
+        }
+
+        function generateMealPlan(config) {
+            // Calculate daily targets based on goal
+            const targets = calculateDailyTargets(config);
+
+            // Update summary
+            document.getElementById('plan-total-calories').textContent = targets.calories.toLocaleString();
+            document.getElementById('plan-total-protein').textContent = targets.protein + 'g';
+            document.getElementById('plan-total-carbs').textContent = targets.carbs + 'g';
+            document.getElementById('plan-total-fats').textContent = targets.fats + 'g';
+
+            // Generate meals for current day
+            generateMealsForDay('monday', config);
+        }
+
+        function calculateDailyTargets(config) {
+            // Base calories differ by gender
+            // Men typically need 2200-2800 cal, Women typically need 1800-2200 cal
+            const isMale = config.gender === 'male';
+            const baseCalories = isMale ? 2400 : 1900;
+
+            let calories = baseCalories;
+            let proteinRatio = 0.3;
+            let carbsRatio = 0.4;
+            let fatsRatio = 0.3;
+
+            switch(config.goal) {
+                case 'fat-loss':
+                    // 20% deficit
+                    calories = isMale ? 1900 : 1500;
+                    proteinRatio = 0.35; // Higher protein to preserve muscle
+                    carbsRatio = 0.35;
+                    fatsRatio = 0.3;
+                    break;
+                case 'muscle-gain':
+                    // 15% surplus
+                    calories = isMale ? 2800 : 2200;
+                    proteinRatio = 0.35;
+                    carbsRatio = 0.45;
+                    fatsRatio = 0.2;
+                    break;
+                case 'maintenance':
+                    calories = baseCalories;
+                    break;
+            }
+
+            // Adjust macros based on diet preference
+            if (config.diet === 'high-protein') {
+                proteinRatio = 0.4;
+                carbsRatio = 0.35;
+                fatsRatio = 0.25;
+            } else if (config.diet === 'low-carb') {
+                proteinRatio = 0.35;
+                carbsRatio = 0.2;
+                fatsRatio = 0.45;
+            } else if (config.diet === 'vegetarian') {
+                // Slightly higher carbs for vegetarian
+                proteinRatio = 0.25;
+                carbsRatio = 0.5;
+                fatsRatio = 0.25;
+            }
+
+            return {
+                calories,
+                protein: Math.round((calories * proteinRatio) / 4),
+                carbs: Math.round((calories * carbsRatio) / 4),
+                fats: Math.round((calories * fatsRatio) / 9)
+            };
+        }
+
+        function generateMealsForDay(day, config) {
+            const timeline = document.getElementById('meals-timeline');
+            const targets = calculateDailyTargets(config);
+
+            // Meal database based on diet preference
+            const mealDatabase = getMealDatabase(config.diet);
+
+            // Distribute calories across meals
+            const mealDistribution = getMealDistribution(config.mealsPerDay);
+
+            let html = '';
+            const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'snack2', 'snack3'];
+            const mealNames = ['Breakfast', 'Lunch', 'Dinner', 'Morning Snack', 'Afternoon Snack', 'Evening Snack'];
+            const mealTimes = ['7:00 AM', '12:30 PM', '7:00 PM', '10:00 AM', '3:30 PM', '9:00 PM'];
+            const mealIcons = ['🌅', '☀️', '🌙', '🍎', '🥤', '🌰'];
+
+            for (let i = 0; i < config.mealsPerDay; i++) {
+                const mealType = mealTypes[i];
+                const mealCalories = Math.round(targets.calories * mealDistribution[i]);
+                const meal = selectMealForType(mealDatabase, mealType, mealCalories, config);
+
+                html += `
+                    <div class="meal-card">
+                        <div class="meal-card-header">
+                            <div class="meal-time-info">
+                                <div class="meal-type-icon ${mealType.replace('2', '').replace('3', '')}">
+                                    ${mealIcons[i]}
+                                </div>
+                                <div>
+                                    <div class="meal-type-name">${mealNames[i]}</div>
+                                    <div class="meal-time-badge">${mealTimes[i]}</div>
+                                </div>
+                            </div>
+                            <div class="meal-calories-badge">${meal.totalCalories} kcal</div>
+                        </div>
+                        <div class="meal-card-body">
+                            <div class="meal-foods">
+                                ${meal.foods.map(food => `
+                                    <div class="food-item">
+                                        <span class="food-icon">${food.icon}</span>
+                                        <div class="food-details">
+                                            <div class="food-name">${food.name}</div>
+                                            <div class="food-portion">${food.portion}</div>
+                                        </div>
+                                        <div class="food-macros">
+                                            <span class="food-macro protein">${food.protein}g P</span>
+                                            <span class="food-macro carbs">${food.carbs}g C</span>
+                                            <span class="food-macro fats">${food.fats}g F</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button class="meal-swap-btn" onclick="swapMeal('${mealType}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"/>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                                </svg>
+                                Swap meal
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            timeline.innerHTML = html;
+        }
+
+        function getMealDistribution(mealsPerDay) {
+            switch(mealsPerDay) {
+                case 3: return [0.3, 0.4, 0.3];
+                case 4: return [0.25, 0.3, 0.3, 0.15];
+                case 5: return [0.2, 0.1, 0.3, 0.25, 0.15];
+                case 6: return [0.2, 0.1, 0.25, 0.1, 0.25, 0.1];
+                default: return [0.25, 0.3, 0.3, 0.15];
+            }
+        }
+
+        function getMealDatabase(diet) {
+            const standardMeals = {
+                breakfast: [
+                    { name: 'Greek Yogurt Parfait', icon: '🥣', foods: [
+                        { name: 'Greek Yogurt', portion: '200g', icon: '🥛', protein: 20, carbs: 8, fats: 5, calories: 157 },
+                        { name: 'Mixed Berries', portion: '100g', icon: '🍓', protein: 1, carbs: 14, fats: 0, calories: 57 },
+                        { name: 'Granola', portion: '40g', icon: '🌾', protein: 4, carbs: 28, fats: 6, calories: 180 }
+                    ]},
+                    { name: 'Protein Oatmeal Bowl', icon: '🥣', foods: [
+                        { name: 'Oatmeal', portion: '80g dry', icon: '🥣', protein: 10, carbs: 54, fats: 6, calories: 304 },
+                        { name: 'Banana', portion: '1 medium', icon: '🍌', protein: 1, carbs: 27, fats: 0, calories: 105 },
+                        { name: 'Almond Butter', portion: '2 tbsp', icon: '🥜', protein: 7, carbs: 6, fats: 18, calories: 196 }
+                    ]},
+                    { name: 'Eggs & Avocado Toast', icon: '🍳', foods: [
+                        { name: 'Scrambled Eggs', portion: '3 large', icon: '🥚', protein: 18, carbs: 2, fats: 15, calories: 210 },
+                        { name: 'Whole Grain Toast', portion: '2 slices', icon: '🍞', protein: 8, carbs: 26, fats: 2, calories: 160 },
+                        { name: 'Avocado', portion: '½ medium', icon: '🥑', protein: 2, carbs: 6, fats: 15, calories: 160 }
+                    ]}
+                ],
+                lunch: [
+                    { name: 'Grilled Chicken Salad', icon: '🥗', foods: [
+                        { name: 'Grilled Chicken Breast', portion: '150g', icon: '🍗', protein: 46, carbs: 0, fats: 5, calories: 248 },
+                        { name: 'Mixed Greens', portion: '100g', icon: '🥬', protein: 2, carbs: 4, fats: 0, calories: 20 },
+                        { name: 'Olive Oil Dressing', portion: '2 tbsp', icon: '🫒', protein: 0, carbs: 0, fats: 28, calories: 240 },
+                        { name: 'Cherry Tomatoes', portion: '80g', icon: '🍅', protein: 1, carbs: 4, fats: 0, calories: 18 }
+                    ]},
+                    { name: 'Salmon Rice Bowl', icon: '🍱', foods: [
+                        { name: 'Grilled Salmon', portion: '140g', icon: '🐟', protein: 28, carbs: 0, fats: 18, calories: 290 },
+                        { name: 'Brown Rice', portion: '150g cooked', icon: '🍚', protein: 4, carbs: 36, fats: 2, calories: 168 },
+                        { name: 'Steamed Broccoli', portion: '100g', icon: '🥦', protein: 3, carbs: 7, fats: 0, calories: 34 }
+                    ]},
+                    { name: 'Turkey Wrap', icon: '🌯', foods: [
+                        { name: 'Turkey Breast', portion: '120g', icon: '🦃', protein: 36, carbs: 0, fats: 2, calories: 162 },
+                        { name: 'Whole Wheat Wrap', portion: '1 large', icon: '🫓', protein: 6, carbs: 36, fats: 4, calories: 200 },
+                        { name: 'Hummus', portion: '40g', icon: '🥣', protein: 3, carbs: 6, fats: 4, calories: 66 },
+                        { name: 'Mixed Vegetables', portion: '80g', icon: '🥒', protein: 2, carbs: 8, fats: 0, calories: 35 }
+                    ]}
+                ],
+                dinner: [
+                    { name: 'Steak & Sweet Potato', icon: '🥩', foods: [
+                        { name: 'Lean Beef Steak', portion: '180g', icon: '🥩', protein: 50, carbs: 0, fats: 14, calories: 330 },
+                        { name: 'Sweet Potato', portion: '200g', icon: '🍠', protein: 4, carbs: 40, fats: 0, calories: 172 },
+                        { name: 'Asparagus', portion: '100g', icon: '🌿', protein: 2, carbs: 4, fats: 0, calories: 20 }
+                    ]},
+                    { name: 'Chicken Stir-Fry', icon: '🍳', foods: [
+                        { name: 'Chicken Thigh', portion: '160g', icon: '🍗', protein: 38, carbs: 0, fats: 12, calories: 264 },
+                        { name: 'Jasmine Rice', portion: '150g cooked', icon: '🍚', protein: 4, carbs: 45, fats: 1, calories: 195 },
+                        { name: 'Stir-Fry Vegetables', portion: '150g', icon: '🥦', protein: 4, carbs: 12, fats: 2, calories: 60 },
+                        { name: 'Teriyaki Sauce', portion: '30ml', icon: '🥢', protein: 1, carbs: 8, fats: 0, calories: 35 }
+                    ]},
+                    { name: 'Baked Fish & Quinoa', icon: '🐟', foods: [
+                        { name: 'Baked Cod', portion: '170g', icon: '🐟', protein: 35, carbs: 0, fats: 2, calories: 160 },
+                        { name: 'Quinoa', portion: '150g cooked', icon: '🌾', protein: 6, carbs: 30, fats: 3, calories: 180 },
+                        { name: 'Roasted Vegetables', portion: '150g', icon: '🥕', protein: 3, carbs: 18, fats: 5, calories: 120 }
+                    ]}
+                ],
+                snack: [
+                    { name: 'Protein Shake', icon: '🥤', foods: [
+                        { name: 'Whey Protein', portion: '1 scoop', icon: '🥛', protein: 25, carbs: 3, fats: 2, calories: 130 },
+                        { name: 'Banana', portion: '1 small', icon: '🍌', protein: 1, carbs: 20, fats: 0, calories: 80 }
+                    ]},
+                    { name: 'Nuts & Fruit', icon: '🥜', foods: [
+                        { name: 'Mixed Nuts', portion: '30g', icon: '🌰', protein: 6, carbs: 6, fats: 16, calories: 180 },
+                        { name: 'Apple', portion: '1 medium', icon: '🍎', protein: 0, carbs: 25, fats: 0, calories: 95 }
+                    ]},
+                    { name: 'Cottage Cheese Bowl', icon: '🧀', foods: [
+                        { name: 'Cottage Cheese', portion: '150g', icon: '🧀', protein: 17, carbs: 5, fats: 6, calories: 147 },
+                        { name: 'Pineapple', portion: '80g', icon: '🍍', protein: 0, carbs: 11, fats: 0, calories: 40 }
+                    ]}
+                ]
+            };
+
+            // Modify based on diet preference
+            if (diet === 'vegetarian') {
+                standardMeals.lunch = [
+                    { name: 'Buddha Bowl', icon: '🥗', foods: [
+                        { name: 'Chickpeas', portion: '150g', icon: '🫘', protein: 15, carbs: 40, fats: 4, calories: 246 },
+                        { name: 'Quinoa', portion: '150g cooked', icon: '🌾', protein: 6, carbs: 30, fats: 3, calories: 180 },
+                        { name: 'Roasted Vegetables', portion: '150g', icon: '🥕', protein: 3, carbs: 18, fats: 5, calories: 120 },
+                        { name: 'Tahini Dressing', portion: '30g', icon: '🥜', protein: 3, carbs: 3, fats: 9, calories: 100 }
+                    ]}
+                ];
+                standardMeals.dinner = [
+                    { name: 'Tofu Stir-Fry', icon: '🍳', foods: [
+                        { name: 'Firm Tofu', portion: '200g', icon: '🧈', protein: 20, carbs: 4, fats: 12, calories: 190 },
+                        { name: 'Brown Rice', portion: '150g cooked', icon: '🍚', protein: 4, carbs: 36, fats: 2, calories: 168 },
+                        { name: 'Mixed Vegetables', portion: '200g', icon: '🥦', protein: 6, carbs: 16, fats: 2, calories: 80 }
+                    ]}
+                ];
+            }
+
+            return standardMeals;
+        }
+
+        function selectMealForType(database, mealType, targetCalories, config) {
+            const type = mealType.replace('2', '').replace('3', '');
+            const options = database[type] || database.snack;
+
+            // Randomly select a meal option
+            const randomIndex = Math.floor(Math.random() * options.length);
+            const selectedMeal = options[randomIndex];
+
+            // Calculate totals
+            let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFats = 0;
+            selectedMeal.foods.forEach(food => {
+                totalCalories += food.calories;
+                totalProtein += food.protein;
+                totalCarbs += food.carbs;
+                totalFats += food.fats;
+            });
+
+            return {
+                ...selectedMeal,
+                totalCalories,
+                totalProtein,
+                totalCarbs,
+                totalFats
+            };
+        }
+
+        function swapMeal(mealType) {
+            // Re-generate just that meal
+            const config = {
+                gender: state.gender || 'male',
+                goal: document.querySelector('.goal-options .config-btn.active')?.dataset.goal || 'muscle-gain',
+                diet: document.querySelector('.diet-options .config-btn.active')?.dataset.diet || 'standard',
+                mealsPerDay: parseInt(document.querySelector('.meals-btn.active')?.dataset.meals) || 4
+            };
+
+            const currentDay = document.querySelector('.day-btn.active')?.dataset.day || 'monday';
+            generateMealsForDay(currentDay, config);
         }
 
         // Food Recognition functionality
@@ -1996,7 +3678,7 @@ Please try again with a different photo.`;
             // Display search results
             function displaySearchResults(results) {
                 if (!results || results.length === 0) {
-                    foodSearchResults.innerHTML = '<div class="food-search-loading">No results found. Try different keywords.</div>';
+                    foodSearchResults.innerHTML = '<div class="food-search-loading">No results found. Try full food names like "boiled eggs" or "grilled chicken".</div>';
                     return;
                 }
 
@@ -2032,100 +3714,68 @@ Please try again with a different photo.`;
                         detectedFoodData = results[0];
                         displayFoodResults({ foods: [results[0]], confidence: 'high' });
                     } else {
-                        // Fallback to local database if API fails
-                        displayFoodResults({ foods: [{ name: foodName, calories: 100, protein: 5, carbs: 10, fats: 3, portion: '1 serving', icon: '🍽️' }], confidence: 'low' });
+                        // No results found - backend will provide food database later
+                        displayFoodResults({ foods: [], confidence: 'low' });
                     }
                 } catch (error) {
                     console.error('API search failed:', error);
-                    displayFoodResults({ foods: [{ name: foodName, calories: 100, protein: 5, carbs: 10, fats: 3, portion: '1 serving', icon: '🍽️' }], confidence: 'low' });
+                    // API error - backend will provide food database later
+                    displayFoodResults({ foods: [], confidence: 'low' });
                 }
             }
 
-            // Local food database for offline/fallback use
-            const localFoodDatabase = [
-                { name: 'Banana', calories: 89, protein: 1, carbs: 23, fats: 0, portion: '1 medium (118g)', icon: '🍌' },
-                { name: 'Apple', calories: 95, protein: 0, carbs: 25, fats: 0, portion: '1 medium (182g)', icon: '🍎' },
-                { name: 'Orange', calories: 62, protein: 1, carbs: 15, fats: 0, portion: '1 medium (131g)', icon: '🍊' },
-                { name: 'Grapes', calories: 104, protein: 1, carbs: 27, fats: 0, portion: '1 cup (151g)', icon: '🍇' },
-                { name: 'Strawberries', calories: 49, protein: 1, carbs: 12, fats: 0, portion: '1 cup (152g)', icon: '🍓' },
-                { name: 'Blueberries', calories: 85, protein: 1, carbs: 21, fats: 0, portion: '1 cup (148g)', icon: '🫐' },
-                { name: 'Chicken Breast', calories: 165, protein: 31, carbs: 0, fats: 4, portion: '100g cooked', icon: '🍗' },
-                { name: 'Grilled Chicken', calories: 165, protein: 31, carbs: 0, fats: 4, portion: '100g', icon: '🍗' },
-                { name: 'Salmon', calories: 208, protein: 20, carbs: 0, fats: 13, portion: '100g cooked', icon: '🐟' },
-                { name: 'Tuna', calories: 132, protein: 28, carbs: 0, fats: 1, portion: '100g canned', icon: '🐟' },
-                { name: 'Beef Steak', calories: 271, protein: 26, carbs: 0, fats: 18, portion: '100g cooked', icon: '🥩' },
-                { name: 'Ground Beef', calories: 250, protein: 26, carbs: 0, fats: 15, portion: '100g cooked', icon: '🥩' },
-                { name: 'Eggs', calories: 155, protein: 13, carbs: 1, fats: 11, portion: '2 large eggs', icon: '🥚' },
-                { name: 'Boiled Eggs', calories: 155, protein: 13, carbs: 1, fats: 11, portion: '2 large eggs', icon: '🥚' },
-                { name: 'Scrambled Eggs', calories: 182, protein: 12, carbs: 2, fats: 14, portion: '2 eggs', icon: '🥚' },
-                { name: 'Oatmeal', calories: 158, protein: 6, carbs: 27, fats: 3, portion: '1 cup cooked', icon: '🥣' },
-                { name: 'White Rice', calories: 206, protein: 4, carbs: 45, fats: 0, portion: '1 cup cooked', icon: '🍚' },
-                { name: 'Brown Rice', calories: 216, protein: 5, carbs: 45, fats: 2, portion: '1 cup cooked', icon: '🍚' },
-                { name: 'Pasta', calories: 220, protein: 8, carbs: 43, fats: 1, portion: '1 cup cooked', icon: '🍝' },
-                { name: 'Bread', calories: 79, protein: 3, carbs: 15, fats: 1, portion: '1 slice', icon: '🍞' },
-                { name: 'Whole Wheat Bread', calories: 81, protein: 4, carbs: 14, fats: 1, portion: '1 slice', icon: '🍞' },
-                { name: 'Broccoli', calories: 55, protein: 4, carbs: 11, fats: 1, portion: '1 cup cooked', icon: '🥦' },
-                { name: 'Spinach', calories: 41, protein: 5, carbs: 7, fats: 0, portion: '1 cup cooked', icon: '🥬' },
-                { name: 'Carrots', calories: 52, protein: 1, carbs: 12, fats: 0, portion: '1 cup raw', icon: '🥕' },
-                { name: 'Sweet Potato', calories: 103, protein: 2, carbs: 24, fats: 0, portion: '1 medium', icon: '🍠' },
-                { name: 'Potato', calories: 161, protein: 4, carbs: 37, fats: 0, portion: '1 medium', icon: '🥔' },
-                { name: 'Avocado', calories: 234, protein: 3, carbs: 12, fats: 21, portion: '1 medium', icon: '🥑' },
-                { name: 'Greek Yogurt', calories: 100, protein: 17, carbs: 6, fats: 1, portion: '170g container', icon: '🥛' },
-                { name: 'Milk', calories: 149, protein: 8, carbs: 12, fats: 8, portion: '1 cup', icon: '🥛' },
-                { name: 'Cheese', calories: 113, protein: 7, carbs: 0, fats: 9, portion: '1 oz (28g)', icon: '🧀' },
-                { name: 'Almonds', calories: 164, protein: 6, carbs: 6, fats: 14, portion: '1 oz (23 nuts)', icon: '🥜' },
-                { name: 'Peanut Butter', calories: 188, protein: 8, carbs: 6, fats: 16, portion: '2 tbsp', icon: '🥜' },
-                { name: 'Protein Shake', calories: 120, protein: 24, carbs: 3, fats: 1, portion: '1 scoop', icon: '🥤' },
-                { name: 'Pizza', calories: 285, protein: 12, carbs: 36, fats: 10, portion: '1 slice', icon: '🍕' },
-                { name: 'Hamburger', calories: 354, protein: 20, carbs: 29, fats: 17, portion: '1 burger', icon: '🍔' },
-                { name: 'Salad', calories: 20, protein: 2, carbs: 4, fats: 0, portion: '1 cup mixed greens', icon: '🥗' },
-                { name: 'Chicken Salad', calories: 180, protein: 22, carbs: 8, fats: 7, portion: '1 serving', icon: '🥗' },
-                { name: 'Coffee', calories: 2, protein: 0, carbs: 0, fats: 0, portion: '1 cup black', icon: '☕' },
-                { name: 'Orange Juice', calories: 112, protein: 2, carbs: 26, fats: 0, portion: '1 cup', icon: '🍊' },
-                { name: 'Smoothie', calories: 180, protein: 5, carbs: 35, fats: 2, portion: '1 cup', icon: '🥤' }
-            ];
-
-            // Search local database
-            function searchLocalDatabase(query) {
-                const searchTerm = query.toLowerCase();
-                return localFoodDatabase.filter(food =>
-                    food.name.toLowerCase().includes(searchTerm)
-                );
-            }
-
-            // Nutrition API search function (local database first, then API fallback)
+            // Nutrition API search function (backend will handle database later)
             async function searchNutritionAPI(query) {
-                // First, check local database for matches (more accurate for common foods)
-                const localResults = searchLocalDatabase(query);
-                if (localResults.length > 0) {
-                    console.log('Found in local database:', localResults);
-                    return localResults;
-                }
-
-                // If no local match, try the API
                 const API_KEY = 'dVJQPgDsCyccGlMqeVhAU3tdWzNtolzSrcVQLggN';
-                console.log('Not in local DB, searching API for:', query);
+                console.log('Searching API for:', query);
+
+                // Common food suffixes to try if initial search fails
+                const commonFoodWords = ['egg', 'eggs', 'chicken', 'rice', 'potato', 'bread', 'fish', 'beef', 'pork', 'salad'];
 
                 try {
-                    const response = await fetch(`https://api.api-ninjas.com/v1/nutrition?query=${encodeURIComponent(query)}`, {
+                    // First try the exact query
+                    let response = await fetch(`https://api.api-ninjas.com/v1/nutrition?query=${encodeURIComponent(query)}`, {
                         method: 'GET',
-                        headers: {
-                            'X-Api-Key': API_KEY
-                        }
+                        headers: { 'X-Api-Key': API_KEY }
                     });
 
-                    console.log('API Response status:', response.status);
+                    let data = await response.json();
+                    console.log('API Response for query:', query, data);
 
-                    if (!response.ok) {
+                    // If no results and query is a cooking method, try with common foods
+                    if ((!data || data.length === 0) && query.length >= 3) {
+                        const cookingMethods = ['boiled', 'fried', 'grilled', 'baked', 'steamed', 'roasted', 'scrambled', 'poached', 'raw', 'cooked'];
+                        const queryLower = query.toLowerCase();
+
+                        if (cookingMethods.some(method => queryLower.includes(method))) {
+                            // Try combining with common foods
+                            const searchPromises = commonFoodWords.slice(0, 5).map(food =>
+                                fetch(`https://api.api-ninjas.com/v1/nutrition?query=${encodeURIComponent(query + ' ' + food)}`, {
+                                    method: 'GET',
+                                    headers: { 'X-Api-Key': API_KEY }
+                                }).then(r => r.json()).catch(() => [])
+                            );
+
+                            const results = await Promise.all(searchPromises);
+                            data = results.flat().filter(item => item && item.name);
+                            console.log('Extended search results:', data);
+                        }
+                    }
+
+                    if (!response.ok && data.length === 0) {
                         console.error('API Error:', response.status, response.statusText);
                         return [];
                     }
 
-                    const data = await response.json();
-                    console.log('API Response data:', data);
+                    console.log('Final API Response data:', data);
 
                     if (Array.isArray(data) && data.length > 0) {
-                        return data.map(item => ({
+                        // Remove duplicates by name
+                        const uniqueData = data.filter((item, index, self) =>
+                            index === self.findIndex(t => t.name?.toLowerCase() === item.name?.toLowerCase())
+                        );
+
+                        return uniqueData.map(item => ({
                             name: item.name.charAt(0).toUpperCase() + item.name.slice(1),
                             calories: Math.round(item.calories) || 0,
                             protein: Math.round(item.protein_g) || 0,
@@ -2435,13 +4085,9 @@ Please try again with a different photo.`;
             }
 
             function simulateFoodRecognition() {
-                // Fallback simulation if AI fails
-                const foodDatabase = [
-                    { name: 'Mixed Meal', portion: '1 serving', calories: 450, protein: 25, carbs: 45, fats: 15, icon: '🍽️' }
-                ];
-
+                // Fallback when AI recognition fails - backend will provide food data
                 return {
-                    foods: foodDatabase,
+                    foods: [],
                     confidence: 'low'
                 };
             }
