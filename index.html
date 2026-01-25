@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -105,6 +105,23 @@
                 <div class="nav-step" data-step="6"></div>
                 <div class="nav-step" data-step="7"></div>
             </div>
+            <!-- Theme Toggle -->
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                <svg class="theme-icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+                <svg class="theme-icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
         </header>
 
         <!-- Screen 1: Upload -->
@@ -197,6 +214,14 @@
                         <button class="view-btn active" data-view="front">Front View</button>
                         <button class="view-btn" data-view="side">Side View</button>
                     </div>
+
+                    <!-- Analyze Button - Below Upload Zone -->
+                    <button class="btn-analyze-main" id="analyze-btn" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                        <span class="btn-text">Analyze</span>
+                    </button>
                 </div>
 
                 <div class="upload-sidebar">
@@ -366,13 +391,6 @@
                         </div>
                         <p><strong>Educational Use Only.</strong> Results are approximate estimations for motivational purposes. Not intended as medical advice or clinical measurement.</p>
                     </div>
-
-                    <button class="btn-primary" id="analyze-btn" disabled>
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                        </svg>
-                        Analyze Photo
-                    </button>
                 </div>
             </div>
         </section>
@@ -606,40 +624,52 @@
                 </div>
 
                 <div class="results-actions">
-                    <button class="btn-secondary" id="view-details-btn">
+                    <button class="btn-nav" id="view-details-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="8"/>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                             <line x1="11" y1="8" x2="11" y2="14"/>
                             <line x1="8" y1="11" x2="14" y2="11"/>
                         </svg>
-                        Detailed Breakdown
+                        Breakdown
                     </button>
-                    <button class="btn-secondary" id="open-simulator-btn">
+                    <button class="btn-nav" id="open-simulator-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/>
                             <polyline points="12 6 12 12 16 14"/>
                         </svg>
                         Simulator
                     </button>
-                    <button class="btn-secondary" id="open-workout-btn">
+                    <button class="btn-nav" id="open-workout-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6.5 6.5h11"/>
-                            <path d="M6.5 17.5h11"/>
-                            <path d="M4 10v4"/>
-                            <path d="M20 10v4"/>
+                            <!-- Dumbbell - horizontal bar -->
+                            <line x1="4" y1="12" x2="20" y2="12"/>
+                            <!-- Left weight plates -->
+                            <rect x="2" y="8" width="3" height="8" rx="1"/>
+                            <rect x="5" y="9" width="2" height="6" rx="0.5"/>
+                            <!-- Right weight plates -->
+                            <rect x="19" y="8" width="3" height="8" rx="1"/>
+                            <rect x="17" y="9" width="2" height="6" rx="0.5"/>
                         </svg>
-                        Workouts
+                        Workout
                     </button>
-                    <button class="btn-secondary" id="open-nutrition-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                            <path d="M2 17l10 5 10-5"/>
-                            <path d="M2 12l10 5 10-5"/>
+                    <button class="btn-nav" id="open-nutrition-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <!-- Fork (left) -->
+                            <path d="M3 3v5c0 1.5 1 2.5 2 2.5s2-1 2-2.5V3"/>
+                            <line x1="4" y1="3" x2="4" y2="5.5"/>
+                            <line x1="6" y1="3" x2="6" y2="5.5"/>
+                            <line x1="5" y1="10.5" x2="5" y2="21"/>
+                            <!-- Plate (center) -->
+                            <ellipse cx="12" cy="14" rx="5" ry="5"/>
+                            <ellipse cx="12" cy="14" rx="2.5" ry="2.5"/>
+                            <!-- Knife (right) -->
+                            <path d="M19 3v18"/>
+                            <path d="M19 3c2 0 2.5 3 2.5 5s-.5 3-2.5 3"/>
                         </svg>
                         Nutrition
                     </button>
-                    <button class="btn-primary" style="flex: 1;" id="new-analysis-btn">
+                    <button class="btn-nav primary" id="new-analysis-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="23 4 23 10 17 10"/>
                             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
@@ -657,7 +687,6 @@
                     <line x1="19" y1="12" x2="5" y2="12"/>
                     <polyline points="12 19 5 12 12 5"/>
                 </svg>
-                Back to Results
             </button>
 
             <div class="breakdown-header">
@@ -957,7 +986,6 @@
                     <line x1="19" y1="12" x2="5" y2="12"/>
                     <polyline points="12 19 5 12 12 5"/>
                 </svg>
-                Back to Results
             </button>
 
             <h1>Lifestyle Simulator</h1>
@@ -970,29 +998,36 @@
                         <div class="comparison-header">
                             <div>
                                 <h2>Visual Projection</h2>
-                                <p class="subtitle" style="font-size: 0.9rem;">Side-by-side comparison based on selected scenario</p>
+                                <p class="subtitle" style="font-size: 0.9rem;">See how your body could change with different lifestyles</p>
                             </div>
                         </div>
+
                         <div class="avatar-container">
                             <div class="avatar-frame current">
-                                <div class="avatar-label">Current State<span>Based on analysis</span></div>
+                                <div class="avatar-label">Current State<span>Your uploaded photo</span></div>
                                 <div class="avatar-body" id="avatar-current">
-                                    <svg viewBox="0 0 100 200">
-                                        <path class="body-fill" d="M50 10 C60 10 65 20 65 30 C65 40 60 45 55 48 L60 50 C75 55 80 70 80 85 L80 100 C80 105 78 110 75 112 L75 150 C75 155 73 160 70 162 L70 185 C70 190 65 195 60 195 L55 195 C52 195 50 193 50 190 L50 190 C50 193 48 195 45 195 L40 195 C35 195 30 190 30 185 L30 162 C27 160 25 155 25 150 L25 112 C22 110 20 105 20 100 L20 85 C20 70 25 55 40 50 L45 48 C40 45 35 40 35 30 C35 20 40 10 50 10 Z"/>
-                                    </svg>
+                                    <img id="current-state-image" src="" alt="Current state" style="display: none;">
+                                    <div class="avatar-placeholder" id="current-placeholder">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                                            <polyline points="21 15 16 10 5 21"/>
+                                        </svg>
+                                        <span>Upload a photo first</span>
+                                    </div>
                                 </div>
                                 <div class="avatar-stats">
                                     <div class="avatar-stat">
                                         <span class="avatar-stat-label">Fitness Index</span>
-                                        <span class="avatar-stat-value">7.2</span>
+                                        <span class="avatar-stat-value" id="current-fitness">7.2</span>
                                     </div>
                                     <div class="avatar-stat">
                                         <span class="avatar-stat-label">Muscle Tone</span>
-                                        <span class="avatar-stat-value">68%</span>
+                                        <span class="avatar-stat-value" id="current-muscle">68%</span>
                                     </div>
                                     <div class="avatar-stat">
                                         <span class="avatar-stat-label">Visual Age</span>
-                                        <span class="avatar-stat-value">28</span>
+                                        <span class="avatar-stat-value" id="current-age">28</span>
                                     </div>
                                 </div>
                             </div>
@@ -1010,9 +1045,19 @@
                             <div class="avatar-frame future">
                                 <div class="avatar-label">Projected State<span id="scenario-time">After 6 months</span></div>
                                 <div class="avatar-body" id="avatar-future">
-                                    <svg viewBox="0 0 100 200">
-                                        <path class="body-fill" id="future-body-path" d="M50 10 C58 10 62 20 62 30 C62 40 58 45 54 48 L58 50 C72 54 76 68 76 82 L76 96 C76 100 74 104 72 106 L72 148 C72 152 70 156 68 158 L68 185 C68 190 64 195 60 195 L55 195 C52 195 50 193 50 190 L50 190 C50 193 48 195 45 195 L40 195 C36 195 32 190 32 185 L32 158 C30 156 28 152 28 148 L28 106 C26 104 24 100 24 96 L24 82 C24 68 28 54 42 50 L46 48 C42 45 38 40 38 30 C38 20 42 10 50 10 Z"/>
-                                    </svg>
+                                    <img id="projected-state-image" src="" alt="Projected state" style="display: none;">
+                                    <div class="avatar-placeholder" id="projected-placeholder">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                            <path d="M2 17l10 5 10-5"/>
+                                            <path d="M2 12l10 5 10-5"/>
+                                        </svg>
+                                        <span>Click Generate to create</span>
+                                    </div>
+                                    <div class="ai-loading-overlay" id="ai-loading" style="display: none;">
+                                        <div class="ai-loading-spinner"></div>
+                                        <span>AI generating transformation...</span>
+                                    </div>
                                 </div>
                                 <div class="avatar-stats">
                                     <div class="avatar-stat">
@@ -1045,30 +1090,37 @@
                                 With consistent effort, you could appear <strong id="years-younger">3 years younger</strong> based on posture, muscle tone, and overall fitness indicators.
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Timeline Slider -->
-                    <div class="glass-card timeline-card">
-                        <div class="timeline-header">
-                            <div>
-                                <h3>Projection Timeline</h3>
-                                <p class="metric-subtitle">Adjust to see estimated changes over time</p>
+                        <!-- Timeline Slider (moved above Generate) -->
+                        <div class="timeline-inline">
+                            <div class="timeline-header-inline">
+                                <span class="timeline-label">Timeline:</span>
+                                <span class="timeline-value" id="timeline-display">6 Months</span>
                             </div>
-                            <span class="timeline-value" id="timeline-display">6 Months</span>
-                        </div>
-                        <div class="timeline-slider-container">
-                            <input type="range" class="timeline-slider" id="timeline-slider" min="1" max="5" value="2" step="1">
-                            <div class="timeline-markers">
-                                <span class="timeline-marker" data-value="1">1 Month</span>
-                                <span class="timeline-marker active" data-value="2">6 Months</span>
-                                <span class="timeline-marker" data-value="3">1 Year</span>
-                                <span class="timeline-marker" data-value="4">2 Years</span>
-                                <span class="timeline-marker" data-value="5">5 Years</span>
+                            <div class="timeline-slider-container">
+                                <input type="range" class="timeline-slider" id="timeline-slider" min="1" max="5" value="2" step="1">
+                                <div class="timeline-markers">
+                                    <span class="timeline-marker" data-value="1">1M</span>
+                                    <span class="timeline-marker active" data-value="2">6M</span>
+                                    <span class="timeline-marker" data-value="3">1Y</span>
+                                    <span class="timeline-marker" data-value="4">2Y</span>
+                                    <span class="timeline-marker" data-value="5">5Y</span>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Generate Button -->
+                        <button class="generate-projection-btn" id="generate-projection-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                        </button>
+                        <p class="ai-disclaimer">Visual simulation showing potential changes based on your selected scenario and timeline. This is for educational/motivational purposes only.</p>
                     </div>
 
-                    <!-- Scenario: Active Lifestyle -->
+                    <!-- Lifestyle Scenarios Grid (2x2) -->
+                    <div class="scenarios-grid">
+                        <!-- Scenario: Active Lifestyle -->
                     <div class="glass-card scenario-card active" data-scenario="active">
                         <div class="scenario-header">
                             <div class="scenario-icon">
@@ -1192,6 +1244,7 @@
                             </div>
                         </div>
                     </div>
+                    </div><!-- End scenarios-grid -->
 
                     <!-- Impact Summary -->
                     <div class="glass-card impact-summary">
@@ -1223,13 +1276,13 @@
 
                     <!-- Actions -->
                     <div class="simulator-actions">
-                        <button class="btn-secondary" id="back-to-breakdown">
+                        <button class="btn-nav" id="back-to-breakdown">
                             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="15 18 9 12 15 6"/>
                             </svg>
-                            View Detailed Analysis
+                            Breakdown
                         </button>
-                        <button class="btn-primary" style="flex: 1;" id="start-new-sim">
+                        <button class="btn-nav primary" id="start-new-sim">
                             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="23 4 23 10 17 10"/>
                                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
@@ -1248,11 +1301,30 @@
                     <line x1="19" y1="12" x2="5" y2="12"/>
                     <polyline points="12 19 5 12 12 5"/>
                 </svg>
-                Back to Results
             </button>
 
-            <h1>Workout Guidance</h1>
-            <p class="subtitle">Personalized exercise recommendations based on your body analysis and fitness goals.</p>
+            <div class="screen-title-row">
+                <div class="screen-logo workout-logo">
+                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- Dumbbell - center bar -->
+                        <line x1="8" y1="24" x2="40" y2="24"/>
+                        <!-- Left weight stack -->
+                        <rect x="4" y="14" width="6" height="20" rx="2"/>
+                        <rect x="10" y="17" width="4" height="14" rx="1"/>
+                        <!-- Right weight stack -->
+                        <rect x="38" y="14" width="6" height="20" rx="2"/>
+                        <rect x="34" y="17" width="4" height="14" rx="1"/>
+                        <!-- Grip texture -->
+                        <line x1="20" y1="22" x2="20" y2="26"/>
+                        <line x1="24" y1="22" x2="24" y2="26"/>
+                        <line x1="28" y1="22" x2="28" y2="26"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Workout Guidance</h1>
+                    <p class="subtitle">Personalized exercise recommendations based on your body analysis and fitness goals.</p>
+                </div>
+            </div>
 
             <div class="workout-content">
                 <!-- Filters -->
@@ -1301,7 +1373,57 @@
                             Weak Areas
                         </button>
                     </div>
+
+                    <!-- Experience Level Selector -->
+                    <div class="experience-selector">
+                        <span class="experience-label">Experience Level:</span>
+                        <div class="experience-levels">
+                            <button class="experience-btn" data-level="beginner">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 16v-4"/>
+                                    <path d="M12 8h.01"/>
+                                </svg>
+                                Beginner
+                            </button>
+                            <button class="experience-btn active" data-level="intermediate">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20V10"/>
+                                    <path d="M18 20V4"/>
+                                    <path d="M6 20v-6"/>
+                                </svg>
+                                Intermediate
+                            </button>
+                            <button class="experience-btn" data-level="advanced">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                                Advanced
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
+
+                <!-- Weekly Routine Button -->
+                <button class="start-routine-btn" id="open-weekly-routine-btn">
+                    <div class="routine-btn-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                    </div>
+                    <div class="routine-btn-text">
+                        <span class="routine-btn-title">Weekly Routine</span>
+                        <span class="routine-btn-subtitle">Generate your personalized training split</span>
+                    </div>
+                    <div class="routine-btn-stats">
+                        <span class="routine-stat"><strong>7</strong> days</span>
+                        <span class="routine-stat"><strong>AI</strong> powered</span>
+                    </div>
+                </button>
 
                 <!-- Weak Areas Banner -->
                 <div class="weak-areas-banner">
@@ -1380,17 +1502,15 @@
                         </div>
                         <p class="exercise-description">Stand with feet shoulder-width apart. Lower your body by bending knees and pushing hips back. Keep chest up and core engaged.</p>
                         <div class="exercise-actions">
-                            <button class="btn-exercise secondary">
+                            <button class="btn-exercise secondary" data-label="Save">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                                 </svg>
-                                Save
                             </button>
-                            <button class="btn-exercise primary">
+                            <button class="btn-exercise primary" data-label="Start">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke="currentColor">
                                     <polygon points="5 3 19 12 5 21 5 3"/>
                                 </svg>
-                                Start
                             </button>
                         </div>
                     </div>
@@ -1448,17 +1568,15 @@
                         </div>
                         <p class="exercise-description">Hold a push-up position with forearms on ground. Keep body in straight line from head to heels. Engage core throughout.</p>
                         <div class="exercise-actions">
-                            <button class="btn-exercise secondary">
+                            <button class="btn-exercise secondary" data-label="Save">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                                 </svg>
-                                Save
                             </button>
-                            <button class="btn-exercise primary">
+                            <button class="btn-exercise primary" data-label="Start">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke="currentColor">
                                     <polygon points="5 3 19 12 5 21 5 3"/>
                                 </svg>
-                                Start
                             </button>
                         </div>
                     </div>
@@ -1517,17 +1635,15 @@
                         </div>
                         <p class="exercise-description">Hinge at hips, one hand on bench. Pull dumbbell to hip, squeezing shoulder blade. Great for improving posture.</p>
                         <div class="exercise-actions">
-                            <button class="btn-exercise secondary">
+                            <button class="btn-exercise secondary" data-label="Save">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                                 </svg>
-                                Save
                             </button>
-                            <button class="btn-exercise primary">
+                            <button class="btn-exercise primary" data-label="Start">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke="currentColor">
                                     <polygon points="5 3 19 12 5 21 5 3"/>
                                 </svg>
-                                Start
                             </button>
                         </div>
                     </div>
@@ -1584,17 +1700,15 @@
                         </div>
                         <p class="exercise-description">Start in plank position with hands shoulder-width. Lower chest to floor, then push back up. Keep core tight throughout.</p>
                         <div class="exercise-actions">
-                            <button class="btn-exercise secondary">
+                            <button class="btn-exercise secondary" data-label="Save">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                                 </svg>
-                                Save
                             </button>
-                            <button class="btn-exercise primary">
+                            <button class="btn-exercise primary" data-label="Start">
                                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke="currentColor">
                                     <polygon points="5 3 19 12 5 21 5 3"/>
                                 </svg>
-                                Start
                             </button>
                         </div>
                     </div>
@@ -1698,19 +1812,478 @@
 
                 <!-- Actions -->
                 <div class="workout-actions">
-                    <button class="btn-secondary" id="back-to-simulator-workout">
+                    <button class="btn-nav" id="back-to-simulator-workout">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/>
                             <polyline points="12 6 12 12 16 14"/>
                         </svg>
-                        Lifestyle Simulator
+                        Simulator
                     </button>
-                    <button class="btn-primary" style="flex: 1;" id="start-routine-btn">
+                    <button class="btn-nav primary" id="go-to-nutrition-workout">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="5 3 19 12 5 21 5 3"/>
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 8v8"/>
+                            <path d="M8 12h8"/>
                         </svg>
-                        Start Full Routine
+                        Nutrition Plan
                     </button>
+                </div>
+            </div>
+
+            <!-- Workout Player Modal -->
+            <div class="workout-player-modal" id="workout-player-modal">
+                <div class="workout-player-container">
+                    <!-- Header -->
+                    <div class="player-header">
+                        <button class="player-close-btn" id="player-close-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                        <div class="player-progress-bar">
+                            <div class="player-progress-fill" id="player-progress-fill"></div>
+                        </div>
+                        <span class="player-progress-text" id="player-progress-text">1 / 6</span>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="player-main">
+                        <!-- Phase Indicator -->
+                        <div class="player-phase" id="player-phase">
+                            <span class="phase-badge exercise">EXERCISE</span>
+                        </div>
+
+                        <!-- Exercise Display -->
+                        <div class="player-exercise">
+                            <h2 class="player-exercise-name" id="player-exercise-name">Bodyweight Squats</h2>
+                            <div class="player-exercise-targets" id="player-exercise-targets">
+                                <span class="target-tag">Quads</span>
+                                <span class="target-tag">Glutes</span>
+                                <span class="target-tag">Core</span>
+                            </div>
+                        </div>
+
+                        <!-- Timer Circle -->
+                        <div class="player-timer-container">
+                            <svg class="player-timer-svg" viewBox="0 0 200 200">
+                                <circle class="timer-bg" cx="100" cy="100" r="90"/>
+                                <circle class="timer-progress" id="timer-progress" cx="100" cy="100" r="90"/>
+                            </svg>
+                            <div class="player-timer-content">
+                                <div class="timer-value" id="timer-value">00:45</div>
+                                <div class="timer-label" id="timer-label">remaining</div>
+                            </div>
+                        </div>
+
+                        <!-- Set Progress -->
+                        <div class="player-sets">
+                            <span class="sets-label">Set</span>
+                            <div class="sets-indicators" id="sets-indicators">
+                                <span class="set-dot completed"></span>
+                                <span class="set-dot active"></span>
+                                <span class="set-dot"></span>
+                            </div>
+                            <span class="sets-count" id="sets-count">2 / 3</span>
+                        </div>
+
+                        <!-- Rep Counter (for rep-based exercises) -->
+                        <div class="player-reps" id="player-reps">
+                            <div class="reps-display">
+                                <span class="reps-current" id="reps-current">0</span>
+                                <span class="reps-separator">/</span>
+                                <span class="reps-target" id="reps-target">15</span>
+                            </div>
+                            <span class="reps-label">reps completed</span>
+                        </div>
+
+                        <!-- Motivational Message -->
+                        <div class="player-motivation" id="player-motivation">
+                            <p>"Push through! You're doing great!"</p>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="player-controls">
+                        <button class="player-btn secondary" id="player-prev-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="19 20 9 12 19 4 19 20"/>
+                                <line x1="5" y1="19" x2="5" y2="5"/>
+                            </svg>
+                        </button>
+                        <button class="player-btn primary" id="player-play-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor" id="play-icon">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                            <svg viewBox="0 0 24 24" fill="currentColor" id="pause-icon" style="display: none;">
+                                <rect x="6" y="4" width="4" height="16"/>
+                                <rect x="14" y="4" width="4" height="16"/>
+                            </svg>
+                        </button>
+                        <button class="player-btn secondary" id="player-next-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5 4 15 12 5 20 5 4"/>
+                                <line x1="19" y1="5" x2="19" y2="19"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="player-quick-actions">
+                        <button class="quick-action-btn" id="skip-rest-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13 19 22 12 13 5 13 19"/>
+                                <polygon points="2 19 11 12 2 5 2 19"/>
+                            </svg>
+                            Skip Rest
+                        </button>
+                        <button class="quick-action-btn" id="add-rep-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="16"/>
+                                <line x1="8" y1="12" x2="16" y2="12"/>
+                            </svg>
+                            +1 Rep
+                        </button>
+                        <button class="quick-action-btn" id="complete-set-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Complete Set
+                        </button>
+                    </div>
+
+                    <!-- Up Next -->
+                    <div class="player-up-next">
+                        <span class="up-next-label">Up Next</span>
+                        <div class="up-next-exercise" id="up-next-exercise">
+                            <div class="up-next-info">
+                                <span class="up-next-name">Plank Hold</span>
+                                <span class="up-next-details">3 sets • 45s hold</span>
+                            </div>
+                            <span class="up-next-tag">Core Focus</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workout Complete Overlay -->
+                <div class="workout-complete-overlay" id="workout-complete-overlay">
+                    <div class="complete-content">
+                        <div class="complete-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <h2>Workout Complete!</h2>
+                        <p class="complete-message">Amazing work! You crushed it today.</p>
+
+                        <div class="complete-stats">
+                            <div class="complete-stat">
+                                <span class="stat-value" id="complete-exercises">6</span>
+                                <span class="stat-label">Exercises</span>
+                            </div>
+                            <div class="complete-stat">
+                                <span class="stat-value" id="complete-sets">18</span>
+                                <span class="stat-label">Total Sets</span>
+                            </div>
+                            <div class="complete-stat">
+                                <span class="stat-value" id="complete-time">24:35</span>
+                                <span class="stat-label">Duration</span>
+                            </div>
+                        </div>
+
+                        <div class="complete-streak">
+                            <div class="streak-flame">🔥</div>
+                            <span>3 Day Streak!</span>
+                        </div>
+
+                        <div class="complete-actions">
+                            <button class="btn-complete secondary" id="share-workout-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="18" cy="5" r="3"/>
+                                    <circle cx="6" cy="12" r="3"/>
+                                    <circle cx="18" cy="19" r="3"/>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                </svg>
+                                Share
+                            </button>
+                            <button class="btn-complete primary" id="finish-workout-btn">
+                                Done
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly Routine Modal -->
+            <div class="weekly-routine-modal" id="weekly-routine-modal">
+                <div class="weekly-routine-container">
+                    <!-- Modal Header -->
+                    <div class="weekly-routine-header">
+                        <h2>Weekly Training Plan</h2>
+                        <button class="modal-close-btn" id="weekly-routine-close">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Configuration Panel -->
+                    <div class="weekly-config" id="weekly-config">
+                        <div class="config-section">
+                            <h3>Training Goal</h3>
+                            <div class="config-options goal-options-weekly">
+                                <button class="config-btn" data-goal="strength">
+                                    <span class="config-icon">🏋️</span>
+                                    <span class="config-label">Strength</span>
+                                    <span class="config-desc">Build power</span>
+                                </button>
+                                <button class="config-btn active" data-goal="hypertrophy">
+                                    <span class="config-icon">💪</span>
+                                    <span class="config-label">Muscle Growth</span>
+                                    <span class="config-desc">Build size</span>
+                                </button>
+                                <button class="config-btn" data-goal="endurance">
+                                    <span class="config-icon">🔥</span>
+                                    <span class="config-label">Endurance</span>
+                                    <span class="config-desc">Burn fat</span>
+                                </button>
+                                <button class="config-btn" data-goal="general">
+                                    <span class="config-icon">⚡</span>
+                                    <span class="config-label">General Fitness</span>
+                                    <span class="config-desc">All-round</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>Training Split</h3>
+                            <div class="config-options split-options">
+                                <button class="config-btn" data-split="full-body">
+                                    <span class="config-icon">🧍</span>
+                                    <span class="config-label">Full Body</span>
+                                    <span class="config-desc">3 days/week</span>
+                                </button>
+                                <button class="config-btn active" data-split="push-pull-legs">
+                                    <span class="config-icon">🔄</span>
+                                    <span class="config-label">Push/Pull/Legs</span>
+                                    <span class="config-desc">6 days/week</span>
+                                </button>
+                                <button class="config-btn" data-split="upper-lower">
+                                    <span class="config-icon">↕️</span>
+                                    <span class="config-label">Upper/Lower</span>
+                                    <span class="config-desc">4 days/week</span>
+                                </button>
+                                <button class="config-btn" data-split="bro-split">
+                                    <span class="config-icon">📅</span>
+                                    <span class="config-label">Bro Split</span>
+                                    <span class="config-desc">5 days/week</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>Available Days</h3>
+                            <div class="days-selector">
+                                <button class="day-toggle active" data-day="mon">Mon</button>
+                                <button class="day-toggle active" data-day="tue">Tue</button>
+                                <button class="day-toggle active" data-day="wed">Wed</button>
+                                <button class="day-toggle active" data-day="thu">Thu</button>
+                                <button class="day-toggle active" data-day="fri">Fri</button>
+                                <button class="day-toggle" data-day="sat">Sat</button>
+                                <button class="day-toggle" data-day="sun">Sun</button>
+                            </div>
+                            <p class="days-hint">Select days you can train</p>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>Session Duration</h3>
+                            <div class="duration-slider-container">
+                                <input type="range" class="duration-slider" id="session-duration" min="30" max="90" value="60" step="15">
+                                <div class="duration-labels">
+                                    <span>30 min</span>
+                                    <span class="duration-value" id="duration-value">60 min</span>
+                                    <span>90 min</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="generate-plan-btn" id="generate-weekly-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                            Generate My Plan
+                        </button>
+                    </div>
+
+                    <!-- Weekly Plan View -->
+                    <div class="weekly-plan-view" id="weekly-plan-view" style="display: none;">
+                        <!-- Week Overview -->
+                        <div class="week-overview">
+                            <div class="week-stats">
+                                <div class="week-stat">
+                                    <span class="stat-number" id="weekly-training-days">5</span>
+                                    <span class="stat-text">Training Days</span>
+                                </div>
+                                <div class="week-stat">
+                                    <span class="stat-number" id="weekly-rest-days">2</span>
+                                    <span class="stat-text">Rest Days</span>
+                                </div>
+                                <div class="week-stat">
+                                    <span class="stat-number" id="weekly-total-time">5h</span>
+                                    <span class="stat-text">Total Time</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Muscle Coverage -->
+                        <div class="muscle-coverage">
+                            <h4>Weekly Muscle Coverage</h4>
+                            <div class="muscle-bars" id="muscle-bars">
+                                <div class="muscle-bar-item">
+                                    <span class="muscle-name">Chest</span>
+                                    <div class="muscle-bar"><div class="muscle-fill" style="width: 80%"></div></div>
+                                    <span class="muscle-hits">2x</span>
+                                </div>
+                                <div class="muscle-bar-item">
+                                    <span class="muscle-name">Back</span>
+                                    <div class="muscle-bar"><div class="muscle-fill" style="width: 80%"></div></div>
+                                    <span class="muscle-hits">2x</span>
+                                </div>
+                                <div class="muscle-bar-item">
+                                    <span class="muscle-name">Shoulders</span>
+                                    <div class="muscle-bar"><div class="muscle-fill" style="width: 100%"></div></div>
+                                    <span class="muscle-hits">3x</span>
+                                </div>
+                                <div class="muscle-bar-item">
+                                    <span class="muscle-name">Legs</span>
+                                    <div class="muscle-bar"><div class="muscle-fill" style="width: 60%"></div></div>
+                                    <span class="muscle-hits">2x</span>
+                                </div>
+                                <div class="muscle-bar-item">
+                                    <span class="muscle-name">Arms</span>
+                                    <div class="muscle-bar"><div class="muscle-fill" style="width: 80%"></div></div>
+                                    <span class="muscle-hits">2x</span>
+                                </div>
+                                <div class="muscle-bar-item">
+                                    <span class="muscle-name">Core</span>
+                                    <div class="muscle-bar"><div class="muscle-fill" style="width: 100%"></div></div>
+                                    <span class="muscle-hits">3x</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Day Selector -->
+                        <div class="week-day-selector">
+                            <button class="week-day-btn active" data-day="monday">
+                                <span class="day-short">Mon</span>
+                                <span class="day-type" id="mon-type">Push</span>
+                            </button>
+                            <button class="week-day-btn" data-day="tuesday">
+                                <span class="day-short">Tue</span>
+                                <span class="day-type" id="tue-type">Pull</span>
+                            </button>
+                            <button class="week-day-btn" data-day="wednesday">
+                                <span class="day-short">Wed</span>
+                                <span class="day-type" id="wed-type">Legs</span>
+                            </button>
+                            <button class="week-day-btn" data-day="thursday">
+                                <span class="day-short">Thu</span>
+                                <span class="day-type" id="thu-type">Push</span>
+                            </button>
+                            <button class="week-day-btn" data-day="friday">
+                                <span class="day-short">Fri</span>
+                                <span class="day-type" id="fri-type">Pull</span>
+                            </button>
+                            <button class="week-day-btn rest" data-day="saturday">
+                                <span class="day-short">Sat</span>
+                                <span class="day-type" id="sat-type">Rest</span>
+                            </button>
+                            <button class="week-day-btn rest" data-day="sunday">
+                                <span class="day-short">Sun</span>
+                                <span class="day-type" id="sun-type">Rest</span>
+                            </button>
+                        </div>
+
+                        <!-- Daily Workout Card -->
+                        <div class="daily-workout-card" id="daily-workout-card">
+                            <div class="daily-header">
+                                <div class="daily-title">
+                                    <h3 id="daily-workout-name">Push Day</h3>
+                                    <span class="daily-focus" id="daily-focus">Chest, Shoulders, Triceps</span>
+                                </div>
+                                <div class="daily-meta">
+                                    <span class="daily-duration" id="daily-duration">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <polyline points="12 6 12 12 16 14"/>
+                                        </svg>
+                                        60 min
+                                    </span>
+                                    <span class="daily-exercises" id="daily-exercise-count">6 exercises</span>
+                                </div>
+                            </div>
+
+                            <!-- Exercise List -->
+                            <div class="daily-exercises-list" id="daily-exercises-list">
+                                <!-- Exercises will be populated by JS -->
+                            </div>
+
+                            <!-- Start This Day Button -->
+                            <button class="start-day-btn" id="start-day-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                                Start Today's Workout
+                            </button>
+                        </div>
+
+                        <!-- Rest Day Card -->
+                        <div class="rest-day-card" id="rest-day-card" style="display: none;">
+                            <div class="rest-icon">😴</div>
+                            <h3>Rest Day</h3>
+                            <p>Recovery is essential for muscle growth. Use this day to:</p>
+                            <ul class="rest-tips">
+                                <li>Get 7-9 hours of quality sleep</li>
+                                <li>Stay hydrated (aim for 3L water)</li>
+                                <li>Light stretching or yoga</li>
+                                <li>Foam rolling for recovery</li>
+                                <li>Hit your protein goals</li>
+                            </ul>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="weekly-actions">
+                            <button class="weekly-action-btn secondary" id="edit-weekly-plan">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                Edit Plan
+                            </button>
+                            <button class="weekly-action-btn secondary" id="regenerate-weekly-plan">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"/>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                                </svg>
+                                Regenerate
+                            </button>
+                            <button class="weekly-action-btn primary" id="save-weekly-plan">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                    <polyline points="17 21 17 13 7 13 7 21"/>
+                                    <polyline points="7 3 7 8 15 8"/>
+                                </svg>
+                                Save Plan
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1722,10 +2295,24 @@
                     <line x1="19" y1="12" x2="5" y2="12"/>
                     <polyline points="12 19 5 12 12 5"/>
                 </svg>
-                Back to Results
             </button>
 
             <div class="breakdown-header">
+                <div class="screen-logo nutrition-logo">
+                    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- Fork (left) -->
+                        <path d="M8 6v10c0 2 1.5 3.5 3 3.5s3-1.5 3-3.5V6"/>
+                        <line x1="9.5" y1="6" x2="9.5" y2="11"/>
+                        <line x1="12.5" y1="6" x2="12.5" y2="11"/>
+                        <line x1="11" y1="19.5" x2="11" y2="42"/>
+                        <!-- Plate (center) -->
+                        <circle cx="26" cy="26" r="11"/>
+                        <circle cx="26" cy="26" r="6"/>
+                        <!-- Knife (right) -->
+                        <path d="M40 6v36"/>
+                        <path d="M40 6c4 0 5 5 5 9s-1 6-5 6"/>
+                    </svg>
+                </div>
                 <div>
                     <h1>Nutrition Guidance</h1>
                     <p class="subtitle">AI-powered nutrition insights tailored to your body analysis and fitness goals.</p>
@@ -1737,9 +2324,11 @@
                 <div class="protein-banner">
                     <div class="protein-banner-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                            <path d="M2 17l10 5 10-5"/>
-                            <path d="M2 12l10 5 10-5"/>
+                            <!-- Meat/Steak icon for protein -->
+                            <path d="M4 14c0-4 3-8 8-8s8 4 8 8c0 3-2 6-8 6s-8-3-8-6z"/>
+                            <ellipse cx="12" cy="12" rx="4" ry="2.5"/>
+                            <path d="M9 10c-.5-.5-1-1.5-.5-2.5"/>
+                            <path d="M15 10c.5-.5 1-1.5.5-2.5"/>
                         </svg>
                     </div>
                     <div class="protein-banner-text">
@@ -1756,9 +2345,26 @@
                     <!-- Macro Overview Card -->
                     <div class="glass-card macro-overview">
                         <div class="macro-header">
-                            <div>
-                                <h2>Daily Macro Targets</h2>
-                                <p class="subtitle" style="max-width: none;">Personalized macronutrient goals based on your body composition and activity level.</p>
+                            <div class="macro-title-row">
+                                <div class="macro-title-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                        <!-- Fork (left) -->
+                                        <path d="M3 3v5c0 1.5 1 2.5 2 2.5s2-1 2-2.5V3"/>
+                                        <line x1="4" y1="3" x2="4" y2="5.5"/>
+                                        <line x1="6" y1="3" x2="6" y2="5.5"/>
+                                        <line x1="5" y1="10.5" x2="5" y2="21"/>
+                                        <!-- Plate (center) -->
+                                        <ellipse cx="12" cy="14" rx="5" ry="5"/>
+                                        <ellipse cx="12" cy="14" rx="2.5" ry="2.5"/>
+                                        <!-- Knife (right) -->
+                                        <path d="M19 3v18"/>
+                                        <path d="M19 3c2 0 2.5 3 2.5 5s-.5 3-2.5 3"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2>Daily Macro Targets</h2>
+                                    <p class="subtitle" style="max-width: none;">Personalized macronutrient goals based on your body composition and activity level.</p>
+                                </div>
                             </div>
                             <div class="calorie-target">
                                 <div class="calorie-number" id="calorie-target-display">2,450</div>
@@ -1772,9 +2378,9 @@
                                 <div class="macro-bar-item">
                                     <div class="macro-icon protein">
                                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                            <path d="M2 17l10 5 10-5"/>
-                                            <path d="M2 12l10 5 10-5"/>
+                                            <!-- Meat/Steak icon -->
+                                            <path d="M4 14c0-4 3-8 8-8s8 4 8 8c0 3-2 6-8 6s-8-3-8-6z"/>
+                                            <ellipse cx="12" cy="12" rx="4" ry="2.5"/>
                                         </svg>
                                     </div>
                                     <div class="macro-info">
@@ -2056,7 +2662,7 @@
                         </div>
 
                         <!-- Analyze Food Button -->
-                        <button class="btn-primary" id="analyze-food-btn" style="margin-top: 16px; display: none;">
+                        <button class="btn-pill-primary" id="analyze-food-btn" style="margin-top: 16px; display: none; width: 100%;">
                             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="11" cy="11" r="8"/>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -2076,13 +2682,13 @@
                             </div>
                             <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 12px 0;">Is this correct?</p>
                             <div class="food-confirm-actions" style="display: flex; gap: 10px; margin-bottom: 16px;">
-                                <button class="btn-primary" id="confirm-food-btn" style="flex: 1;">
+                                <button class="btn-pill-primary" id="confirm-food-btn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="20 6 9 17 4 12"/>
                                     </svg>
                                     Yes, Correct
                                 </button>
-                                <button class="btn-secondary" id="change-food-btn" style="flex: 1;">
+                                <button class="btn-pill-secondary" id="change-food-btn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -2094,8 +2700,8 @@
                                 <label style="color: var(--text-secondary); font-size: 0.85rem;">Search for correct food:</label>
                                 <div class="food-search-input-wrapper" style="display: flex; gap: 8px; margin-top: 8px;">
                                     <input type="text" id="food-search-input" class="food-search-input" placeholder="e.g., boiled eggs, grilled chicken...">
-                                    <button class="btn-primary" id="food-search-btn" style="padding: 12px 16px;">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+                                    <button class="btn-pill-icon" id="food-search-btn">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <circle cx="11" cy="11" r="8"/>
                                             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                                         </svg>
@@ -2135,14 +2741,14 @@
                                 </div>
                             </div>
                             <div class="food-action-buttons" style="display: flex; gap: 12px; margin-top: 16px;">
-                                <button class="btn-secondary" id="add-to-log-btn" style="flex: 1;">
+                                <button class="btn-pill-secondary" id="add-to-log-btn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <line x1="12" y1="5" x2="12" y2="19"/>
                                         <line x1="5" y1="12" x2="19" y2="12"/>
                                     </svg>
                                     Add to Log
                                 </button>
-                                <button class="btn-primary" id="scan-new-food-btn" style="flex: 1;">
+                                <button class="btn-pill-primary" id="scan-new-food-btn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                                         <circle cx="12" cy="13" r="4"/>
@@ -2224,9 +2830,9 @@
                             <div class="insight-card protein-insight">
                                 <div class="insight-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                        <path d="M2 17l10 5 10-5"/>
-                                        <path d="M2 12l10 5 10-5"/>
+                                        <!-- Meat/Steak icon -->
+                                        <path d="M4 14c0-4 3-8 8-8s8 4 8 8c0 3-2 6-8 6s-8-3-8-6z"/>
+                                        <ellipse cx="12" cy="12" rx="4" ry="2.5"/>
                                     </svg>
                                 </div>
                                 <h3 class="insight-title">Protein Timing</h3>
@@ -2258,35 +2864,252 @@
 
                     <!-- Actions -->
                     <div class="nutrition-actions">
-                        <button class="btn-secondary" id="back-to-workout-nutrition">
+                        <button class="btn-nav" id="back-to-workout-nutrition">
                             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M6.5 6.5h11"/>
-                                <path d="M6.5 17.5h11"/>
-                                <path d="M4 10v4"/>
-                                <path d="M20 10v4"/>
+                                <!-- Dumbbell -->
+                                <line x1="4" y1="12" x2="20" y2="12"/>
+                                <rect x="2" y="8" width="3" height="8" rx="1"/>
+                                <rect x="5" y="9" width="2" height="6" rx="0.5"/>
+                                <rect x="19" y="8" width="3" height="8" rx="1"/>
+                                <rect x="17" y="9" width="2" height="6" rx="0.5"/>
                             </svg>
-                            View Workouts
+                            Workout
                         </button>
-                        <button class="btn-secondary" id="back-to-simulator-nutrition">
+                        <button class="btn-nav" id="back-to-simulator-nutrition">
                             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10"/>
                                 <polyline points="12 6 12 12 16 14"/>
                             </svg>
-                            Lifestyle Simulator
+                            Simulator
                         </button>
-                        <button class="btn-primary" style="flex: 1;" id="generate-meal-plan-btn">
+                        <button class="btn-nav primary" id="generate-meal-plan-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>
                                 <line x1="16" y1="13" x2="8" y2="13"/>
                                 <line x1="16" y1="17" x2="8" y2="17"/>
                             </svg>
-                            Generate Full Meal Plan
+                            Meal Plan
                         </button>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- Gender Confirmation Modal -->
+        <div class="gender-confirm-modal" id="gender-confirm-modal">
+            <div class="gender-confirm-container">
+                <div class="gender-confirm-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <h3>Confirm Your Profile</h3>
+                <p class="gender-confirm-text">Based on body analysis, we detected:</p>
+
+                <div class="detected-gender" id="detected-gender-display">
+                    <span class="detected-icon" id="detected-gender-icon">👨</span>
+                    <span class="detected-label" id="detected-gender-label">Male</span>
+                    <span class="confidence-tag" id="gender-confidence">High confidence</span>
+                </div>
+
+                <p class="gender-confirm-question">Is this correct?</p>
+
+                <div class="gender-confirm-options">
+                    <button class="gender-option-btn" data-gender="male" id="confirm-male">
+                        <span class="gender-option-icon">👨</span>
+                        <span>Male</span>
+                    </button>
+                    <button class="gender-option-btn" data-gender="female" id="confirm-female">
+                        <span class="gender-option-icon">👩</span>
+                        <span>Female</span>
+                    </button>
+                </div>
+
+                <button class="gender-confirm-btn" id="gender-confirm-proceed">
+                    Continue to Results
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Meal Plan Modal -->
+        <div class="meal-plan-modal" id="meal-plan-modal">
+            <div class="meal-plan-container">
+                <button class="meal-plan-close" id="meal-plan-close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+
+                <!-- Header -->
+                <div class="meal-plan-header">
+                    <div class="meal-plan-title-row">
+                        <div class="meal-plan-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                                <path d="M3 3v5c0 1.5 1 2.5 2 2.5s2-1 2-2.5V3"/>
+                                <line x1="4" y1="3" x2="4" y2="5.5"/>
+                                <line x1="6" y1="3" x2="6" y2="5.5"/>
+                                <line x1="5" y1="10.5" x2="5" y2="21"/>
+                                <ellipse cx="12" cy="14" rx="5" ry="5"/>
+                                <ellipse cx="12" cy="14" rx="2.5" ry="2.5"/>
+                                <path d="M19 3v18"/>
+                                <path d="M19 3c2 0 2.5 3 2.5 5s-.5 3-2.5 3"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2>Your Personalized Meal Plan</h2>
+                            <p class="meal-plan-subtitle">AI-generated nutrition plan based on your body analysis and goals</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration Panel -->
+                <div class="meal-plan-config" id="meal-plan-config">
+                    <div class="config-section">
+                        <h3>Select Your Goal</h3>
+                        <div class="config-options goal-options">
+                            <button class="config-btn" data-goal="fat-loss">
+                                <span class="config-icon">🔥</span>
+                                <span class="config-label">Fat Loss</span>
+                                <span class="config-desc">Caloric deficit</span>
+                            </button>
+                            <button class="config-btn active" data-goal="muscle-gain">
+                                <span class="config-icon">💪</span>
+                                <span class="config-label">Muscle Gain</span>
+                                <span class="config-desc">Caloric surplus</span>
+                            </button>
+                            <button class="config-btn" data-goal="maintenance">
+                                <span class="config-icon">⚖️</span>
+                                <span class="config-label">Maintenance</span>
+                                <span class="config-desc">Balanced intake</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h3>Dietary Preference</h3>
+                        <div class="config-options diet-options">
+                            <button class="config-btn active" data-diet="standard">
+                                <span class="config-icon">🍽️</span>
+                                <span class="config-label">Standard</span>
+                            </button>
+                            <button class="config-btn" data-diet="high-protein">
+                                <span class="config-icon">🥩</span>
+                                <span class="config-label">High Protein</span>
+                            </button>
+                            <button class="config-btn" data-diet="vegetarian">
+                                <span class="config-icon">🥗</span>
+                                <span class="config-label">Vegetarian</span>
+                            </button>
+                            <button class="config-btn" data-diet="low-carb">
+                                <span class="config-icon">🥑</span>
+                                <span class="config-label">Low Carb</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h3>Meals Per Day</h3>
+                        <div class="meals-per-day-selector">
+                            <button class="meals-btn" data-meals="3">3</button>
+                            <button class="meals-btn active" data-meals="4">4</button>
+                            <button class="meals-btn" data-meals="5">5</button>
+                            <button class="meals-btn" data-meals="6">6</button>
+                        </div>
+                    </div>
+
+                    <button class="generate-plan-btn" id="generate-plan-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                        Generate My Plan
+                    </button>
+                </div>
+
+                <!-- Generated Plan View -->
+                <div class="meal-plan-view" id="meal-plan-view" style="display: none;">
+                    <!-- Daily Summary -->
+                    <div class="daily-summary">
+                        <div class="summary-card calories">
+                            <div class="summary-value" id="plan-total-calories">2,450</div>
+                            <div class="summary-label">Daily Calories</div>
+                            <div class="summary-bar">
+                                <div class="summary-bar-fill" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <div class="summary-card protein">
+                            <div class="summary-value" id="plan-total-protein">180g</div>
+                            <div class="summary-label">Protein</div>
+                            <div class="summary-bar">
+                                <div class="summary-bar-fill"></div>
+                            </div>
+                        </div>
+                        <div class="summary-card carbs">
+                            <div class="summary-value" id="plan-total-carbs">245g</div>
+                            <div class="summary-label">Carbs</div>
+                            <div class="summary-bar">
+                                <div class="summary-bar-fill"></div>
+                            </div>
+                        </div>
+                        <div class="summary-card fats">
+                            <div class="summary-value" id="plan-total-fats">82g</div>
+                            <div class="summary-label">Fats</div>
+                            <div class="summary-bar">
+                                <div class="summary-bar-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Day Selector -->
+                    <div class="day-selector">
+                        <button class="day-btn active" data-day="monday">Mon</button>
+                        <button class="day-btn" data-day="tuesday">Tue</button>
+                        <button class="day-btn" data-day="wednesday">Wed</button>
+                        <button class="day-btn" data-day="thursday">Thu</button>
+                        <button class="day-btn" data-day="friday">Fri</button>
+                        <button class="day-btn" data-day="saturday">Sat</button>
+                        <button class="day-btn" data-day="sunday">Sun</button>
+                    </div>
+
+                    <!-- Meals Timeline -->
+                    <div class="meals-timeline" id="meals-timeline">
+                        <!-- Meals will be generated here -->
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="plan-actions">
+                        <button class="plan-action-btn secondary" id="regenerate-plan-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                            </svg>
+                            Regenerate
+                        </button>
+                        <button class="plan-action-btn secondary" id="edit-plan-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            Edit Goals
+                        </button>
+                        <button class="plan-action-btn primary" id="save-plan-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            Save Plan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="script.js"></script>
 </html>
